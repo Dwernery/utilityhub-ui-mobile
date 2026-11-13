@@ -1,6 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition, useReducedMotion } from 'react-native-reanimated';
 
 import { Card } from '@/components/ui/card';
 import { colors, radius, spacing, tabularNums, type } from '@/constants/theme';
@@ -26,14 +27,19 @@ function HeroStat({ label, value, tone }: { label: string; value: string; tone?:
 }
 
 /** Net worth for the selected year with YoY change; year stats behind "Show details" (web HeroCard). */
+/** Duration of the hero details expand/collapse; the dashboard chart eases over the same time. */
+export const DETAILS_MS = 250;
+
 export function HeroCard({ history, year }: { history: NetWorthEntry[] | undefined; year: number | null }) {
   const [open, setOpen] = useState(false);
   const { currentNetWorth, yoyChange, yoyPercentage } = getYearMetrics(history, year);
   const s = getYearStats(history, year);
   const up = yoyChange >= 0;
+  const reduceMotion = useReducedMotion();
 
   return (
-    <View style={styles.hero}>
+    // The card animates its height when the details open/close (in step with the chart below).
+    <Animated.View style={styles.hero} layout={reduceMotion ? undefined : LinearTransition.duration(DETAILS_MS)}>
       <View style={styles.inline}>
         <SymbolView name="dollarsign.circle.fill" size={16} tintColor="#dbeafe" />
         <Text style={styles.heroLabel}>NET WORTH {year ?? ''}</Text>
@@ -63,7 +69,10 @@ export function HeroCard({ history, year }: { history: NetWorthEntry[] | undefin
         <SymbolView name={open ? 'chevron.up' : 'chevron.down'} size={12} weight="semibold" tintColor="#bfdbfe" />
       </Pressable>
       {open && (
-        <View style={styles.heroGrid}>
+        <Animated.View
+          style={styles.heroGrid}
+          entering={reduceMotion ? undefined : FadeIn.duration(DETAILS_MS)}
+          exiting={reduceMotion ? undefined : FadeOut.duration(DETAILS_MS / 2)}>
           <HeroStat label="Year High" value={fmt(s.highest)} />
           <HeroStat label="Year Low" value={fmt(s.lowest)} />
           <HeroStat label="Best Month" value={s.bestMonth ? `${s.bestMonth.month.slice(0, 3)} +${fmt(s.bestMonth.change)}` : '—'} tone={POS} />
@@ -74,9 +83,9 @@ export function HeroCard({ history, year }: { history: NetWorthEntry[] | undefin
             value={`${s.avgChangePercent >= 0 ? '+' : '-'}${Math.abs(s.avgChangePercent).toFixed(1)}%`}
             tone={s.avgChangePercent >= 0 ? POS : NEG}
           />
-        </View>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
