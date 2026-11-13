@@ -1,11 +1,12 @@
 import { router, Stack } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BookRow } from '@/components/library/book-row';
 import { LibrarySwitcher } from '@/components/library/library-switcher';
+import { SkeletonListGroup } from '@/components/ui/skeleton';
 import { accents, colors, spacing, tabularNums, type } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { useIsWide } from '@/hooks/use-is-wide';
@@ -124,7 +125,10 @@ export default function Inventory() {
         SectionSeparatorComponent={() => <View style={{ height: spacing.xs }} />}
         ListEmptyComponent={
           isPending ? (
-            <ActivityIndicator style={styles.empty} />
+            <View style={styles.skeleton} accessibilityLabel="Loading" accessibilityRole="progressbar">
+              <SkeletonListGroup rows={4} />
+              <SkeletonListGroup rows={2} />
+            </View>
           ) : isError ? (
             <View style={styles.empty}>
               <Text style={[type.subheadline, { color: colors.negative, textAlign: 'center' }]}>
@@ -165,5 +169,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   sectionTitle: { flex: 1, color: colors.label, fontWeight: '600' },
+  skeleton: { gap: spacing.lg, paddingTop: spacing.md },
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: 64 },
 });

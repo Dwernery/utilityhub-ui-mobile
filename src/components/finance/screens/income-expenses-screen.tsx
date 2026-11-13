@@ -2,7 +2,7 @@ import { SegmentedControl } from '@expo/ui/community/segmented-control';
 import { router, Stack } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { FinanceSwitcher } from '@/components/finance/finance-switcher';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
@@ -13,6 +13,7 @@ import { useIsWide } from '@/hooks/use-is-wide';
 import { useClearAllPaid, useTransactions, useUpdateTransaction } from '@/lib/finance/hooks';
 import type { Transaction, TransactionType } from '@/lib/finance/types';
 import { Currencyformatter } from '@/lib/finance/utils/currency';
+import { Skeleton, SkeletonListGroup, SkeletonTiles } from '@/components/ui/skeleton';
 import { transactionTotals } from '@/lib/finance/utils/monthly';
 
 const fmt = (n: number) => Currencyformatter.format(n);
@@ -116,7 +117,18 @@ export default function IncomeExpenses() {
         <FinanceSwitcher current="Expenses" />
 
         {isPending ? (
-          <ActivityIndicator style={styles.state} />
+          <View style={styles.stack} accessibilityLabel="Loading" accessibilityRole="progressbar">
+            <SkeletonTiles count={4} perRow={wide ? 4 : 2} />
+            <Skeleton height={32} r={9} />
+            <View style={wide ? styles.columns : styles.stack}>
+              <View style={wide ? styles.flex : undefined}>
+                <SkeletonListGroup rows={4} cover={false} />
+              </View>
+              <View style={wide ? styles.flex : undefined}>
+                <SkeletonListGroup rows={6} cover={false} />
+              </View>
+            </View>
+          </View>
         ) : isError ? (
           <View style={styles.state}>
             <Text style={[type.subheadline, { color: colors.negative, textAlign: 'center' }]}>

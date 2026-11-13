@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View, type ColorValue } from 'react-native
 
 import { BookCover } from '@/components/library/book-cover';
 import { ProgressBar } from '@/components/ui/progress-bar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { colors, radius, spacing, tabularNums, type } from '@/constants/theme';
 
 /** Small uppercase-ish section label with an icon: "All-Time", "MCU Phases", "Currently reading"… */
@@ -76,9 +77,9 @@ export function EmptyLine({ children }: { children: ReactNode }) {
 export function CardSkeleton({ tall = false }: { tall?: boolean }) {
   return (
     <View style={styles.skeleton} accessibilityLabel="Loading" accessibilityRole="progressbar">
-      <View style={[styles.skeletonBlock, { height: tall ? 120 : 44 }]} />
-      <View style={[styles.skeletonBlock, { width: '75%' }]} />
-      <View style={[styles.skeletonBlock, { width: '50%' }]} />
+      <Skeleton height={tall ? 120 : 44} r={radius.sm} />
+      <Skeleton width="75%" />
+      <Skeleton width="50%" />
     </View>
   );
 }
@@ -108,6 +109,5 @@ const styles = StyleSheet.create({
   muted: { color: colors.secondaryLabel },
   flex: { flex: 1 },
   skeleton: { gap: spacing.sm, marginTop: spacing.md },
-  skeletonBlock: { height: 14, borderRadius: radius.sm, backgroundColor: colors.tertiaryFill },
   error: { marginTop: spacing.md, gap: spacing.sm, alignItems: 'flex-start' },
 });

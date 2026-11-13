@@ -1,7 +1,7 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { SagaSectionView, TrackerOverview } from '@/components/mcu/tracker-parts';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
@@ -13,6 +13,7 @@ import { useChangeStatus } from '@/lib/mcu/useChangeStatus';
 import type { TrackerView } from '@/lib/mcu/utils/constants';
 import { normalizeTrackerData } from '@/lib/mcu/utils/normalizeTrackerData';
 import { categorySections, defaultExpanded, sagaSections } from '@/lib/mcu/utils/sections';
+import { Skeleton, SkeletonCard, SkeletonSurface, SkeletonTheme, SkeletonTiles } from '@/components/ui/skeleton';
 import { combineStats, nextStatus } from '@/lib/mcu/utils/stats';
 
 const isView = (v: unknown): v is TrackerView => v === 'phases' || v === 'categories';
@@ -52,7 +53,19 @@ export default function Tracker() {
         indicatorStyle="white"
         refreshControl={<RefreshControl tintColor={mcuColors.secondaryLabel} refreshing={isRefetching} onRefresh={() => void refetch()} />}>
         {isPending ? (
-          <ActivityIndicator color={mcuColors.secondaryLabel} style={styles.state} />
+          <SkeletonTheme dark>
+            <View style={styles.skeleton} accessibilityLabel="Loading" accessibilityRole="progressbar">
+              <Skeleton height={32} r={9} />
+              <SkeletonCard lines={0} tall={8} />
+              <SkeletonTiles count={3} perRow={3} />
+              <Skeleton width="55%" height={22} />
+              <SkeletonSurface style={styles.posterSkeleton}>
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} width={112} height={168} r={12} />
+                ))}
+              </SkeletonSurface>
+            </View>
+          </SkeletonTheme>
         ) : isError ? (
           <View style={styles.state}>
             <Text style={[type.subheadline, { color: '#f87171' }]}>Failed to load MCU tracker data.</Text>
@@ -116,5 +129,7 @@ const styles = StyleSheet.create({
   screen: { backgroundColor: mcuColors.background },
   content: { paddingBottom: spacing.xxl },
   state: { alignItems: 'center', gap: spacing.sm, paddingVertical: 64 },
+  skeleton: { gap: spacing.md },
+  posterSkeleton: { flexDirection: 'row', gap: 10, padding: spacing.md, overflow: 'hidden' },
   empty: { color: mcuColors.secondaryLabel, textAlign: 'center', paddingVertical: 48 },
 });

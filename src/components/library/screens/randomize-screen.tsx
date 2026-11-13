@@ -6,6 +6,7 @@ import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { BookCover } from '@/components/library/book-cover';
 import { LibrarySwitcher } from '@/components/library/library-switcher';
 import { Card } from '@/components/ui/card';
+import { SkeletonCard, SkeletonTiles } from '@/components/ui/skeleton';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { accents, colors, radius, spacing, tabularNums, type } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
@@ -31,7 +32,7 @@ const SPIN_INTERVAL = 65;
 const pickBook = (p: RandomPick) => (p.type === 'book' ? p.book : p.group.firstBook);
 
 export default function Randomize() {
-  const { data: books = [] } = useBooks();
+  const { data: books = [], isPending } = useBooks();
   const { startReading, isPending: isStarting } = useStartReading();
   const reduceMotion = useReducedMotion();
 
@@ -126,7 +127,12 @@ export default function Randomize() {
         })}
       </View>
 
-      {candidates.length === 0 ? (
+      {isPending ? (
+        <View style={styles.skeleton} accessibilityLabel="Loading" accessibilityRole="progressbar">
+          <SkeletonTiles count={3} perRow={3} />
+          <SkeletonCard lines={2} tall={120} />
+        </View>
+      ) : candidates.length === 0 ? (
         <Card>
           <View style={styles.empty}>
             <SymbolView name="books.vertical" size={40} tintColor={colors.tertiaryLabel} />
@@ -302,6 +308,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondaryGroupedBackground,
   },
   categoryActive: { borderColor: accents.library },
+  skeleton: { gap: spacing.lg },
   empty: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl },
   primary: {
     flexDirection: 'row',

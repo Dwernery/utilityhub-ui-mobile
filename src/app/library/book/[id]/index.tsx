@@ -9,6 +9,7 @@ import { StarRating } from '@/components/library/star-rating';
 import { MetricRow } from '@/components/ui/metric-row';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { SheetCloseButton } from '@/components/ui/sheet-close-button';
+import { Skeleton, SkeletonCard } from '@/components/ui/skeleton';
 import { accents, colors, radius, spacing, type } from '@/constants/theme';
 import { useToast } from '@/context/toast';
 import { haptics } from '@/lib/haptics';
@@ -31,11 +32,23 @@ export default function BookDetail() {
       <>
         <Stack.Screen options={{ title: 'Book' }} />
         <SheetCloseButton />
-        <View style={styles.missing}>
-          <Text style={[type.subheadline, { color: colors.secondaryLabel }]}>
-            {isPending ? 'Loading…' : 'This book no longer exists.'}
-          </Text>
-        </View>
+        {isPending ? (
+          <View style={styles.loading} accessibilityLabel="Loading" accessibilityRole="progressbar">
+            <View style={styles.hero}>
+              <Skeleton width={104} height={156} r={8} />
+              <View style={[styles.heroText, { gap: spacing.sm }]}>
+                <Skeleton width="80%" height={22} />
+                <Skeleton width="50%" />
+                <Skeleton width="35%" />
+              </View>
+            </View>
+            <SkeletonCard lines={0} tall={48} />
+          </View>
+        ) : (
+          <View style={styles.missing}>
+            <Text style={[type.subheadline, { color: colors.secondaryLabel }]}>This book no longer exists.</Text>
+          </View>
+        )}
       </>
     );
   }
@@ -175,5 +188,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     backgroundColor: colors.secondaryGroupedBackground,
   },
+  loading: { padding: spacing.lg, paddingTop: 72, gap: spacing.lg },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
