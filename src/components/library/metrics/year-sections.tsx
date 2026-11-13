@@ -16,11 +16,13 @@ import { finishedInYear, GRAPH_METRICS, MONTH_SHORT, signed, type GraphMetric } 
 const METRIC_KEYS: GraphMetric[] = ['books', 'pages', 'rating'];
 
 /** "Books / Pages / Ratings per year" bar chart (Swift Charts). The selected year is highlighted. */
-export function YearChartCard({ metrics, graphMetric, setGraphMetric, selectedYear }: {
+export function YearChartCard({ metrics, graphMetric, setGraphMetric, selectedYear, setSelectedYear }: {
   metrics: LibraryMetrics;
   graphMetric: GraphMetric;
   setGraphMetric: (m: GraphMetric) => void;
   selectedYear: number | null;
+  /** Tapping a bar selects that year (tap again to clear), like tapping its row in the year list. */
+  setSelectedYear: (y: number | null) => void;
 }) {
   const cfg = GRAPH_METRICS[graphMetric];
   const data = [...metrics.yearComparisons]
@@ -52,22 +54,13 @@ export function YearChartCard({ metrics, graphMetric, setGraphMetric, selectedYe
         style={{ marginTop: spacing.md }}
         emptyText="No finished books yet"
         accessibilityLabel={`${cfg.label}: ${describeSeries(data, cfg.format)}`}
+        formatValue={cfg.format}
+        unit={graphMetric === 'books' ? 'books' : graphMetric === 'pages' ? 'pages' : 'average rating'}
+        onSelect={(label) => {
+          const y = Number(label);
+          setSelectedYear(selectedYear === y ? null : y);
+        }}
       />
-      {/* Swift Charts has no tap handling or value labels; show the numbers underneath instead. */}
-      <View style={styles.valueRow}>
-        {data.map((d) => (
-          <View key={d.label} style={styles.valueCell}>
-            <Text
-              style={[
-                type.caption1,
-                tabularNums,
-                { color: String(selectedYear) === d.label ? accents.library : colors.secondaryLabel, fontWeight: '600' },
-              ]}>
-              {cfg.format(d.value)}
-            </Text>
-          </View>
-        ))}
-      </View>
     </Card>
   );
 }
@@ -206,8 +199,6 @@ const styles = StyleSheet.create({
   muted: { color: colors.secondaryLabel },
   right: { alignItems: 'flex-end' },
   cardHeader: { marginBottom: spacing.md },
-  valueRow: { flexDirection: 'row', paddingRight: 28, marginTop: 4 },
-  valueCell: { flex: 1, alignItems: 'center' },
   listTitle: { color: colors.label, padding: spacing.lg },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: colors.separator },
   yearRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },

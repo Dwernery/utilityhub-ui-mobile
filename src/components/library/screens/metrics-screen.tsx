@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { LibrarySwitcher } from '@/components/library/library-switcher';
 import { CurrentlyReadingCard } from '@/components/library/metrics/currently-reading';
@@ -10,6 +10,7 @@ import { accents, colors, spacing, type } from '@/constants/theme';
 import { useIsWide } from '@/hooks/use-is-wide';
 import { useBooks } from '@/lib/library/hooks';
 import { calculateMetrics } from '@/lib/library/utils/metricUtils';
+import { SkeletonCard, SkeletonTiles } from '@/components/ui/skeleton';
 import type { GraphMetric } from '@/lib/library/utils/yearDetails';
 
 export default function Metrics() {
@@ -29,7 +30,11 @@ export default function Metrics() {
       <LibrarySwitcher current="Metrics" />
 
       {isPending ? (
-        <ActivityIndicator style={styles.state} />
+        <View style={styles.stack} accessibilityLabel="Loading" accessibilityRole="progressbar">
+          <SkeletonCard lines={1} />
+          <SkeletonTiles count={4} perRow={wide ? 4 : 2} />
+          <SkeletonCard lines={0} tall={200} />
+        </View>
       ) : isError ? (
         <View style={styles.state}>
           <Text style={[type.subheadline, { color: colors.negative, textAlign: 'center' }]}>
@@ -67,6 +72,7 @@ export default function Metrics() {
                 graphMetric={graphMetric}
                 setGraphMetric={setGraphMetric}
                 selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
               />
             </View>
             <View style={wide ? styles.flex : undefined}>

@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { FinanceSwitcher } from '@/components/finance/finance-switcher';
 import { Card } from '@/components/ui/card';
-import { BarChart, describeSeries } from '@/components/ui/charts';
+import { BarChart, describeSeries, formatThousands } from '@/components/ui/charts';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { accents, colors, radius, spacing, tabularNums, type } from '@/constants/theme';
 import { useToast } from '@/context/toast';
@@ -13,6 +13,7 @@ import { haptics } from '@/lib/haptics';
 import { useIsWide } from '@/hooks/use-is-wide';
 import { useIncomeSources } from '@/lib/finance/hooks';
 import { Currencyformatter } from '@/lib/finance/utils/currency';
+import { Skeleton, SkeletonCard } from '@/components/ui/skeleton';
 import { getIncomeYears, getIncomeYoY, getSourcesForYear, getYearTotal } from '@/lib/finance/utils/income';
 
 const fmt = (n: number) => Currencyformatter.format(n);
@@ -64,7 +65,13 @@ export default function IncomeHistory() {
       <FinanceSwitcher current="History" />
 
       {isPending ? (
-        <ActivityIndicator style={styles.state} />
+        <View style={styles.skeleton} accessibilityLabel="Loading" accessibilityRole="progressbar">
+          <View style={[styles.years, { flexDirection: 'row' }]}>
+            <Skeleton width={72} height={36} r={18} />
+            <Skeleton width={72} height={36} r={18} />
+          </View>
+          <SkeletonCard lines={3} />
+        </View>
       ) : isError ? (
         <View style={styles.state}>
           <Text style={[type.subheadline, { color: colors.negative, textAlign: 'center' }]}>
@@ -169,6 +176,8 @@ export default function IncomeHistory() {
                     highlight={year != null ? String(year) : null}
                     height={240}
                     accessibilityLabel={`Income by year: ${describeSeries(yearTotals, fmt)}`}
+                    formatValue={formatThousands}
+                    onSelect={(label) => setSelectedYear(Number(label))}
                   />
                   <View style={styles.yearTotals}>
                     {yearTotals.map((t) => (
@@ -203,6 +212,7 @@ const styles = StyleSheet.create({
     backgroundColor: accents.finances,
   },
   years: { gap: spacing.sm },
+  skeleton: { gap: spacing.lg },
   columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
   mainCol: { flex: 1.3, minWidth: 0 },
   sideCol: { flex: 1, minWidth: 0 },

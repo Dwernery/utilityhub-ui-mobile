@@ -1,6 +1,6 @@
-import { Chart, Host, type ChartDataPoint } from '@expo/ui/swift-ui';
-import { useState } from 'react';
-import { StyleSheet, Text, View, type ColorValue, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View, type ColorValue, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { colors, radius, spacing, tabularNums, type } from '@/constants/theme';
@@ -8,7 +8,7 @@ import { haptics } from '@/lib/haptics';
 
 /**
  * Charts:
- * - `BarChart`: native Swift Charts (via @expo/ui). Bars start at zero, which is what we want.
+ * - `BarChart`: plain views, so bars are tappable and labelled (Swift Charts has no tap API).
  * - `LineChart`: lightweight SVG, because Swift Charts here can't set a Y domain (it always
  *   includes 0, flattening net worth) and has no touch inspection. Matches the web graph:
  *   Y axis snapped to `yStep` around the data, formatted tick labels, and touch-and-drag to
@@ -201,16 +201,72 @@ function niceTicks(min: number, max: number, step: number) {
   return ticks;
 }
 
-// ── Bar chart (Swift Charts) ───────────────────────────────────────────────
+// ── Bar chart ──────────────────────────────────────────────────────────────
 
 interface BarChartProps extends BaseChartProps {
   tint: ColorValue;
   /** Label of a bar to emphasize (others are dimmed), e.g. the selected year. */
   highlight?: string | null;
   dimColor?: ColorValue;
+  /** Tap a bar (label passed back); enables button semantics + haptics. */
+  onSelect?: (label: string) => void;
+  /** Value label printed above each bar. */
+  formatValue?: (n: number) => string;
+  /** Unit for VoiceOver ("30 books"). */
+  unit?: string;
 }
 
-/** Vertical bars (books/pages per year or month). */
+const BAR_LABEL = 18; // value label above the bar
+const AXIS_LABEL = 20; // category label below
+
+function Bar({ value, max, plotH, color, active, label, display, onPress, a11y }: {
+  value: number;
+  max: number;
+  plotH: number;
+  color: ColorValue;
+  active: boolean;
+  label: string;
+  display: string;
+  onPress?: () => void;
+  a11y: string;
+}) {
+  const reduceMotion = useReducedMotion();
+  const target = max > 0 ? Math.max(value > 0 ? 3 : 0, (value / max) * plotH) : 0;
+  const h = useSharedValue(reduceMotion ? target : 0);
+  useEffect(() => {
+    h.set(reduceMotion ? target : withTiming(target, { duration: 450 }));
+  }, [target, reduceMotion, h]);
+  const barStyle = useAnimatedStyle(() => ({ height: h.get() }));
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : 'text'}
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={a11y}
+      style={({ pressed }) => [styles.barCol, pressed && { opacity: 0.6 }]}>
+      <View style={[styles.barArea, { height: plotH + BAR_LABEL }]}>
+        <Text
+          style={[styles.barValue, tabularNums, { color: active ? (color as string) : colors.secondaryLabel }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit>
+          {display}
+        </Text>
+        <Animated.View style={[styles.bar, { backgroundColor: color }, barStyle]} />
+      </View>
+      <Text style={[styles.barLabel, active && { color: colors.label, fontWeight: '600' }]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+/**
+ * Vertical bars (books/pages per year, income by year). Built from plain views rather than Swift
+ * Charts so bars are tappable (select a year), labelled with their values, and individually
+ * readable by VoiceOver. Bars start at zero.
+ */
 export function BarChart({
   data,
   tint,
@@ -220,18 +276,43 @@ export function BarChart({
   emptyText = 'No data yet',
   accessibilityLabel,
   style,
+  onSelect,
+  formatValue = String,
+  unit = '',
 }: BarChartProps) {
   if (data.length === 0) return <EmptyChart height={height} text={emptyText} />;
-  const points: ChartDataPoint[] = data.map((d) => ({
-    x: d.label,
-    y: d.value,
-    color: highlight == null || highlight === d.label ? tint : dimColor,
-  }));
+  const max = Math.max(...data.map((d) => d.value), 0);
+  const plotH = height - BAR_LABEL - AXIS_LABEL;
+
   return (
-    <View style={style} accessible accessibilityRole="image" accessibilityLabel={accessibilityLabel}>
-      <Host style={{ height }}>
-        <Chart type="bar" data={points} showGrid animate barStyle={{ cornerRadius: 4 }} />
-      </Host>
+    <View style={[{ height }, style]} accessibilityLabel={accessibilityLabel}>
+      <View style={[styles.baseline, { top: BAR_LABEL + plotH }]} />
+      <View style={styles.bars}>
+        {data.map((d) => {
+          const active = highlight == null || highlight === d.label;
+          return (
+            <Bar
+              key={d.label}
+              value={d.value}
+              max={max}
+              plotH={plotH}
+              color={active ? tint : dimColor}
+              active={highlight === d.label}
+              label={d.label}
+              display={formatValue(d.value)}
+              onPress={
+                onSelect
+                  ? () => {
+                      haptics.selection();
+                      onSelect(d.label);
+                    }
+                  : undefined
+              }
+              a11y={`${d.label}: ${formatValue(d.value)}${unit ? ` ${unit}` : ''}`}
+            />
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -245,6 +326,13 @@ export function describeSeries(data: SeriesPoint[], format: (n: number) => strin
 export const formatThousands = (v: number) => '$' + Math.floor(v / 1000) + 'k';
 
 const styles = StyleSheet.create({
+  bars: { flex: 1, flexDirection: 'row', gap: spacing.sm },
+  barCol: { flex: 1, alignItems: 'center' },
+  barArea: { width: '100%', alignItems: 'center', justifyContent: 'flex-end' },
+  bar: { width: '72%', maxWidth: 72, borderTopLeftRadius: 6, borderTopRightRadius: 6, borderCurve: 'continuous' },
+  barValue: { fontSize: 12, fontWeight: '600', marginBottom: 3, maxWidth: '100%' },
+  barLabel: { height: AXIS_LABEL, paddingTop: 4, fontSize: 12, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] },
+  baseline: { position: 'absolute', left: 0, right: 0, height: StyleSheet.hairlineWidth, backgroundColor: colors.separator },
   empty: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.lg },
   gridRow: { position: 'absolute', left: 0, flexDirection: 'row', alignItems: 'center', height: 14 },
   gridLine: { height: StyleSheet.hairlineWidth, backgroundColor: colors.separator },
