@@ -13,6 +13,8 @@ export function authorStats(books: Book[], author: string) {
   const readBooks = authorBooks.filter((b) => b.status === 'READ');
   return {
     books: authorBooks,
+    /** Pages across all of the author's books, read or not. */
+    totalPages: pagesOf(authorBooks),
     readCount: readBooks.length,
     pagesRead: pagesOf(readBooks),
     avgRating: avgRatingOf(readBooks),

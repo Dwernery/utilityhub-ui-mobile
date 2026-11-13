@@ -12,7 +12,7 @@ export default function AuthorDetail() {
   return (
     <BookGroupSheet
       title={name}
-      subtitle={`${plural(s.books.length, 'book')} · ${s.readCount} read`}
+      subtitle={`${plural(s.books.length, 'book')} · ${plural(s.totalPages, 'page')}`}
       metrics={[
         { value: s.readCount, label: 'Read' },
         { value: s.pagesRead.toLocaleString(), label: 'Pages' },

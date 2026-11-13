@@ -16,7 +16,7 @@ import { readingProgress } from '@/lib/library/utils/homeStats';
 
 function PillButton({ title, icon, tint, onPress, disabled }: {
   title: string;
-  icon: 'checkmark' | 'xmark';
+  icon: 'checkmark';
   tint: string;
   onPress: () => void;
   disabled?: boolean;
@@ -66,6 +66,7 @@ function ReadingRow({ book }: { book: Book }) {
             {days !== null ? ` · ${days}d` : ''}
           </Text>
         </View>
+        {/* Only "Done": books in progress always get finished (no "Remove" back to unread). */}
         <View style={styles.actions}>
           <PillButton
             title="Done"
@@ -80,19 +81,6 @@ function ReadingRow({ book }: { book: Book }) {
                 'Failed to mark book read',
               );
             }}
-          />
-          <PillButton
-            title="Remove"
-            icon="xmark"
-            tint={colors.secondaryLabel as string}
-            disabled={pending}
-            onPress={() =>
-              mutate(
-                { id: book.id, status: 'UNREAD', startDate: null, endDate: null, currentPage: 0 },
-                `Removed ${book.title} from progress`,
-                'Failed to remove book from progress',
-              )
-            }
           />
         </View>
       </View>
