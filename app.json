@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Project SHIELD",
+    "slug": "utility-hub-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "utilityhubmobile",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      },
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dwernery.projectshield"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a photo to use as a book cover.",
+          "cameraPermission": "Take a photo of a book cover.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-status-bar",
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logo.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "image": "./assets/images/logo.png",
+            "backgroundColor": "#0b1426"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
