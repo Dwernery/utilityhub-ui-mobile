@@ -11,6 +11,25 @@ interface RequestOptions {
   includeErrorDetail?: boolean;
 }
 
+/**
+ * Extracts a human-readable message from a failed response. The API returns RFC 9457
+ * problem details (`{ status, detail, errors? }`); falls back to raw text otherwise.
+ */
+async function readErrorMessage(response: Response): Promise<string> {
+  const text = await response.text();
+  try {
+    const problem = JSON.parse(text) as { detail?: string; title?: string; errors?: Record<string, string> };
+    if (problem.errors) {
+      return Object.entries(problem.errors)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join(', ');
+    }
+    return problem.detail || problem.title || text;
+  } catch {
+    return text;
+  }
+}
+
 /** Shared fetch wrapper for every domain API client (replaces the repeated ok/text/content-type blocks). */
 async function send(path: string, { method = 'GET', body, errorMessage, includeErrorDetail }: RequestOptions) {
   const response = await fetch(`${API_URL}${path}`, {
@@ -21,7 +40,7 @@ async function send(path: string, { method = 'GET', body, errorMessage, includeE
 
   if (!response.ok) {
     if (includeErrorDetail) {
-      const errorText = await response.text();
+      const errorText = await readErrorMessage(response);
       throw new Error(`${errorMessage} (status ${response.status}): ${errorText || 'Unknown error'}`);
     }
     throw new Error(`${errorMessage} (status ${response.status})`);

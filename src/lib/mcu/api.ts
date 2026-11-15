@@ -6,9 +6,9 @@ export function getMcuTracker() {
 }
 
 export async function updateContentStatus({ globalId, status }: { globalId: string; status: WatchStatus }) {
-  await requestVoid('/api/mcu/tracker/status', {
+  await requestVoid(`/api/mcu/tracker/${encodeURIComponent(globalId)}/status`, {
     method: 'PUT',
-    body: { globalId, status },
+    body: { status },
     errorMessage: 'Failed to update content status',
     includeErrorDetail: true,
   });

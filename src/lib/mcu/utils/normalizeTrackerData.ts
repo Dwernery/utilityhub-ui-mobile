@@ -62,7 +62,9 @@ function extractDomainItems(domain: ApiDomain | undefined): McuItem[] {
   items.sort((a, b) => dateValue(a.premiereDate) - dateValue(b.premiereDate));
 
   return items.map(
-    (item) => ({ ...item, premiereDate: new Date(item.premiereDate ?? NaN).getFullYear() }) as McuItem,
+    // premiereDate is a calendar date ("YYYY-MM-DD"); read the year from the string so the
+    // device's time zone can't shift it (new Date() would).
+    (item) => ({ ...item, premiereDate: item.premiereDate ? Number(item.premiereDate.slice(0, 4)) : NaN }) as McuItem,
   );
 }
 

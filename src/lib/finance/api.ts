@@ -10,18 +10,17 @@ export function getNetWorthHistory() {
 }
 
 export function updateAccountBalance(accountId: string, balanceDate: string, balance: number) {
-  return requestMaybeJson(`${BASE}/account-balance`, {
+  return requestMaybeJson(`${BASE}/accounts/${accountId}/balances/${balanceDate}`, {
     method: 'PUT',
-    body: { accountId, balanceDate, balance },
+    body: { balance },
     errorMessage: 'Failed to update account balance',
     includeErrorDetail: true,
   });
 }
 
 export function deleteAccountBalance(accountId: string, balanceDate: string) {
-  return requestMaybeJson(`${BASE}/account-balance`, {
+  return requestMaybeJson(`${BASE}/accounts/${accountId}/balances/${balanceDate}`, {
     method: 'DELETE',
-    body: { accountId, balanceDate },
     errorMessage: 'Failed to delete account balance',
     includeErrorDetail: true,
   });
@@ -45,9 +44,9 @@ export function getTransactions() {
 }
 
 export function updateTransaction(id: string, name: string, amount: number, paid: boolean) {
-  return requestMaybeJson(`${BASE}/transactions`, {
+  return requestMaybeJson(`${BASE}/transactions/${id}`, {
     method: 'PUT',
-    body: { id, name, amount, paid },
+    body: { name, amount, paid },
     errorMessage: 'Failed to update transaction',
     includeErrorDetail: true,
   });
@@ -75,18 +74,17 @@ export function createIncomeSource(year: number, name: string, amount: number) {
 }
 
 export function updateIncomeSource(id: string, name: string, amount: number) {
-  return requestMaybeJson(`${BASE}/income-sources`, {
+  return requestMaybeJson(`${BASE}/income-sources/${id}`, {
     method: 'PUT',
-    body: { id, name, amount },
+    body: { name, amount },
     errorMessage: 'Failed to update income source',
     includeErrorDetail: true,
   });
 }
 
 export function deleteIncomeSource(id: string) {
-  return requestMaybeJson(`${BASE}/income-sources`, {
+  return requestMaybeJson(`${BASE}/income-sources/${id}`, {
     method: 'DELETE',
-    body: { id },
     errorMessage: 'Failed to delete income source',
     includeErrorDetail: true,
   });
