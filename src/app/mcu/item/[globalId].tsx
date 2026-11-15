@@ -9,7 +9,7 @@ import { MCU_BORDER } from '@/components/mcu/tracker-parts';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { SheetCloseButton } from '@/components/ui/sheet-close-button';
-import { mcuColors, radius, spacing, tabularNums, type } from '@/constants/theme';
+import { accentHex, mcuColors, radius, spacing, tabularNums, type } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { useMcuTracker } from '@/lib/mcu/context';
 import { useMcuTrackerData } from '@/lib/mcu/hooks';
@@ -19,6 +19,8 @@ import { MODAL_LABELS, MODAL_TITLE, STATUS_LABELS, TYPE_META } from '@/lib/mcu/u
 import { normalizeTrackerData } from '@/lib/mcu/utils/normalizeTrackerData';
 import { findItem } from '@/lib/mcu/utils/sections';
 import { getStatus, nextStatus } from '@/lib/mcu/utils/stats';
+import { LoadError } from '@/components/ui/load-error';
+import { SkeletonCard, SkeletonTheme } from '@/components/ui/skeleton';
 
 const STATUSES: WatchStatus[] = ['UNWATCHED', 'IN_PROGRESS', 'WATCHED'];
 
@@ -34,7 +36,7 @@ function Panel({ label, children }: { label: string; children: React.ReactNode }
 /** Movie / special / TV-season details (ported from McuDetailModal). */
 export default function McuItemDetail() {
   const { globalId } = useLocalSearchParams<{ globalId: string }>();
-  const { data } = useMcuTrackerData();
+  const { data, isError, error, refetch } = useMcuTrackerData();
   const found = useMemo(() => {
     const { phases, expandedCategories } = normalizeTrackerData(data);
     return findItem(phases, expandedCategories, globalId);
@@ -46,7 +48,15 @@ export default function McuItemDetail() {
         <Stack.Screen options={{ title: 'Details' }} />
         <SheetCloseButton />
         <View style={styles.missing}>
-          <Text style={[type.subheadline, styles.muted]}>{data ? 'Item not found.' : 'Loading…'}</Text>
+          {data ? (
+            <Text style={[type.subheadline, styles.muted]}>Item not found.</Text>
+          ) : isError ? (
+            <LoadError what="MCU details" error={error} onRetry={() => refetch()} tint={accentHex.mcu} dark />
+          ) : (
+            <SkeletonTheme dark>
+              <SkeletonCard lines={3} tall={160} />
+            </SkeletonTheme>
+          )}
         </View>
       </>
     );

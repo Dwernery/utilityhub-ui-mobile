@@ -9,7 +9,7 @@ export function getNetWorthHistory() {
   });
 }
 
-export function updateAccountBalance(accountId: string, balanceDate: string, balance: number) {
+export function updateAccountBalance(accountId: number, balanceDate: string, balance: number) {
   return requestMaybeJson(`${BASE}/accounts/${accountId}/balances/${balanceDate}`, {
     method: 'PUT',
     body: { balance },
@@ -18,7 +18,7 @@ export function updateAccountBalance(accountId: string, balanceDate: string, bal
   });
 }
 
-export function deleteAccountBalance(accountId: string, balanceDate: string) {
+export function deleteAccountBalance(accountId: number, balanceDate: string) {
   return requestMaybeJson(`${BASE}/accounts/${accountId}/balances/${balanceDate}`, {
     method: 'DELETE',
     errorMessage: 'Failed to delete account balance',
@@ -30,10 +30,27 @@ export function getAccounts() {
   return requestJson<Account[]>(`${BASE}/accounts`, { errorMessage: 'Failed to fetch accounts' });
 }
 
-export function createAccount(accountName: string, accountType: string, category: AccountCategory) {
+export interface NewAccount {
+  accountName: string;
+  accountType: string;
+  category: AccountCategory;
+  /** Balance and date travel together: the API rejects one without the other. */
+  initialBalance?: { balance: number; date: string };
+}
+
+/**
+ * Creates the account and, optionally, its first monthly balance in ONE request.
+ * The API does both in a single transaction, so either both exist or neither does.
+ */
+export function createAccount({ accountName, accountType, category, initialBalance }: NewAccount) {
   return requestJson<Account>(`${BASE}/accounts`, {
     method: 'POST',
-    body: { accountName, accountType, category },
+    body: {
+      accountName,
+      accountType,
+      category,
+      ...(initialBalance && { balance: initialBalance.balance, balanceDate: initialBalance.date }),
+    },
     errorMessage: 'Failed to create account',
     includeErrorDetail: true,
   });
@@ -43,7 +60,7 @@ export function getTransactions() {
   return requestJson<Transaction[]>(`${BASE}/transactions`, { errorMessage: 'Failed to fetch transactions' });
 }
 
-export function updateTransaction(id: string, name: string, amount: number, paid: boolean) {
+export function updateTransaction(id: number, name: string, amount: number, paid: boolean) {
   return requestMaybeJson(`${BASE}/transactions/${id}`, {
     method: 'PUT',
     body: { name, amount, paid },
@@ -73,7 +90,7 @@ export function createIncomeSource(year: number, name: string, amount: number) {
   });
 }
 
-export function updateIncomeSource(id: string, name: string, amount: number) {
+export function updateIncomeSource(id: number, name: string, amount: number) {
   return requestMaybeJson(`${BASE}/income-sources/${id}`, {
     method: 'PUT',
     body: { name, amount },
@@ -82,7 +99,7 @@ export function updateIncomeSource(id: string, name: string, amount: number) {
   });
 }
 
-export function deleteIncomeSource(id: string) {
+export function deleteIncomeSource(id: number) {
   return requestMaybeJson(`${BASE}/income-sources/${id}`, {
     method: 'DELETE',
     errorMessage: 'Failed to delete income source',

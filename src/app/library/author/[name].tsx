@@ -6,7 +6,8 @@ import { authorStats, plural } from '@/lib/library/utils/groupStats';
 
 export default function AuthorDetail() {
   const { name = '' } = useLocalSearchParams<{ name: string }>();
-  const { data: books = [] } = useBooks();
+  const booksQuery = useBooks();
+  const books = booksQuery.data ?? [];
   const s = authorStats(books, name);
 
   return (
@@ -19,6 +20,7 @@ export default function AuthorDetail() {
         { value: s.avgRating ?? '—', label: 'Avg ★' },
       ]}
       books={s.books}
+      query={booksQuery}
       secondary="series"
     />
   );

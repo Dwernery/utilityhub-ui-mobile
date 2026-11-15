@@ -1,9 +1,7 @@
 import type { AccountBalance, NetWorthEntry, Transaction } from '../types';
 import { getEntryAssets, getEntryLiabilities, MONTH_LABELS, PRIOR_YEAR_ENDING_BALANCES } from './metrics';
+import { byDate, isoMonth, isoYear, previousMonthIso } from '../../dates';
 
-const yearOf = (e: NetWorthEntry) => parseInt((e?.date || '').split('-')[0]);
-const monthOf = (e: NetWorthEntry) => parseInt((e?.date || '').split('-')[1]);
-const byDate = (a: NetWorthEntry, b: NetWorthEntry) => new Date(a.date).getTime() - new Date(b.date).getTime();
 
 export interface MonthRow {
   /** `YYYY-MM` — route key for the month sheet */
@@ -31,7 +29,7 @@ export function buildMonthlyRows(history: NetWorthEntry[] | undefined, selectedY
 
   // Complete months of the selected year (current month excluded from calculations)
   const entries = all
-    .filter((e) => !(yearOf(e) === currentYear && monthOf(e) === currentMonth) && yearOf(e) === selectedYear)
+    .filter((e) => !(isoYear(e.date) === currentYear && isoMonth(e.date) === currentMonth) && isoYear(e.date) === selectedYear)
     .sort(byDate);
 
   const rows = new Map<number, MonthRow>();
@@ -39,7 +37,7 @@ export function buildMonthlyRows(history: NetWorthEntry[] | undefined, selectedY
     const assets = getEntryAssets(entry);
     const liabilities = getEntryLiabilities(entry);
     const netWorth = entry.netWorth || assets - liabilities;
-    const monthIndex = monthOf(entry) - 1;
+    const monthIndex = isoMonth(entry.date) - 1;
 
     let change = 0;
     let changePercent = 0;
@@ -52,7 +50,7 @@ export function buildMonthlyRows(history: NetWorthEntry[] | undefined, selectedY
       // January compares against last year's ending balance
       let prev: number | undefined = PRIOR_YEAR_ENDING_BALANCES[selectedYear];
       if (prev === undefined) {
-        const prevYear = all.filter((e) => yearOf(e) === selectedYear - 1).sort((a, b) => byDate(b, a));
+        const prevYear = all.filter((e) => isoYear(e.date) === selectedYear - 1).sort((a, b) => byDate(b, a));
         prev = prevYear[0]?.netWorth;
       }
       if (prev !== undefined) {
@@ -78,7 +76,7 @@ export function buildMonthlyRows(history: NetWorthEntry[] | undefined, selectedY
   // Current month: display only, change vs. the last complete month
   if (selectedYear === currentYear) {
     const current = all
-      .filter((e) => yearOf(e) === currentYear && monthOf(e) === currentMonth)
+      .filter((e) => isoYear(e.date) === currentYear && isoMonth(e.date) === currentMonth)
       .sort((a, b) => byDate(b, a))[0];
     if (current) {
       const assets = getEntryAssets(current);
@@ -125,16 +123,13 @@ export function buildMonthlyRows(history: NetWorthEntry[] | undefined, selectedY
 export function monthAccounts(history: NetWorthEntry[] | undefined, date: string) {
   const all = history ?? [];
   const entry = all.find((e) => e.date === date);
-  const [y, m] = date.split('-').map(Number);
-  const prev = new Date(y, m - 1, 1);
-  prev.setMonth(prev.getMonth() - 1);
-  const prevDate = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-01`;
+  const prevDate = previousMonthIso(date);
   const prevBalances = new Map(
-    (all.find((e) => e.date === prevDate)?.accounts ?? []).map((a) => [String(a.id || a.accountId), a.balance]),
+    (all.find((e) => e.date === prevDate)?.accounts ?? []).map((a) => [a.accountId, a.balance]),
   );
 
   const withChange = (a: AccountBalance) => {
-    const before = prevBalances.get(String(a.id || a.accountId));
+    const before = prevBalances.get(a.accountId);
     if (before === undefined) return { ...a, change: null as number | null, changePercent: null as number | null };
     const change = a.balance - before;
     return { ...a, change, changePercent: pct(change, before) };

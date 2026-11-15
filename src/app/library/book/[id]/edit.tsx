@@ -10,6 +10,7 @@ import { useBook, useS3Upload, useUpdateBook } from '@/lib/library/hooks';
 import type { Book, BookUpdate } from '@/lib/library/types';
 import { BOOK_VALIDATION_MESSAGE, isBookValid } from '@/lib/library/utils/bookValidation';
 import type { PickedFile } from '@/lib/library/utils/s3Upload';
+import { parseIdParam } from '@/lib/routeParams';
 
 const toDraft = (b: Book): BookDraft => ({
   title: b.title ?? '',
@@ -35,7 +36,7 @@ const normalize = (d: BookDraft) => ({
 });
 
 export default function EditBook() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const id = parseIdParam(useLocalSearchParams<{ id: string }>().id);
   const { data: book } = useBook(id);
 
   if (!book) {
@@ -83,7 +84,7 @@ function EditBookForm({ book }: { book: Book }) {
 
       if (file) {
         try {
-          await s3.uploadFile(file, String(book.id), 'cover');
+          await s3.uploadFile(file, book.id, 'cover');
           addToast(`Book "${title}" updated and file uploaded`, 'success');
         } catch (e) {
           addToast(`Book updated, but file upload failed: ${(e as Error)?.message || 'Unknown error'}`, 'warning');

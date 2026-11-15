@@ -18,6 +18,7 @@ import {
   type RandomCategory,
   type RandomPick,
 } from '@/lib/library/utils/randomize';
+import { LoadError } from '@/components/ui/load-error';
 
 const CATEGORIES: { id: RandomCategory; label: string; sub: string | null }[] = [
   { id: 'standalone', label: 'Standalones', sub: null },
@@ -32,7 +33,8 @@ const SPIN_INTERVAL = 65;
 const pickBook = (p: RandomPick) => (p.type === 'book' ? p.book : p.group.firstBook);
 
 export default function Randomize() {
-  const { data: books = [], isPending } = useBooks();
+  const { data, isPending, isError, error, refetch } = useBooks();
+  const books = useMemo(() => data ?? [], [data]);
   const { startReading, isPending: isStarting } = useStartReading();
   const reduceMotion = useReducedMotion();
 
@@ -132,6 +134,10 @@ export default function Randomize() {
           <SkeletonTiles count={3} perRow={3} />
           <SkeletonCard lines={2} tall={120} />
         </View>
+      ) : isError && !data ? (
+        <Card>
+          <LoadError what="books" error={error} onRetry={() => refetch()} tint={accents.library} />
+        </Card>
       ) : candidates.length === 0 ? (
         <Card>
           <View style={styles.empty}>

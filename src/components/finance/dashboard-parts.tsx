@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition, useReducedMotion } from 'react-native-reanimated';
 
 import { Card } from '@/components/ui/card';
-import { colors, radius, spacing, tabularNums, type } from '@/constants/theme';
+import { colors, financeSurfaces, radius, spacing, tabularNums, type } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { Currencyformatter } from '@/lib/finance/utils/currency';
 import { getYearMetrics, getYearStats } from '@/lib/finance/utils/metrics';
@@ -12,14 +12,14 @@ import type { MonthRow } from '@/lib/finance/utils/monthly';
 import type { NetWorthEntry } from '@/lib/finance/types';
 
 const fmt = (n: number) => Currencyformatter.format(n);
-const POS = '#6ee7b7'; // emerald-300 on blue, as on the web hero
-const NEG = '#fda4af'; // rose-300
+const POS = financeSurfaces.onHero.positive;
+const NEG = financeSurfaces.onHero.negative;
 
 function HeroStat({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
     <View style={styles.heroStat} accessible accessibilityLabel={`${label}: ${value}`}>
       <Text style={styles.heroStatLabel}>{label.toUpperCase()}</Text>
-      <Text style={[type.subheadline, tabularNums, { color: tone ?? '#fff', fontWeight: '600' }]} numberOfLines={1} adjustsFontSizeToFit>
+      <Text style={[type.subheadline, tabularNums, { color: tone ?? financeSurfaces.onHero.primary, fontWeight: '600' }]} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
     </View>
@@ -41,7 +41,7 @@ export function HeroCard({ history, year }: { history: NetWorthEntry[] | undefin
     // The card animates its height when the details open/close (in step with the chart below).
     <Animated.View style={styles.hero} layout={reduceMotion ? undefined : LinearTransition.duration(DETAILS_MS)}>
       <View style={styles.inline}>
-        <SymbolView name="dollarsign.circle.fill" size={16} tintColor="#dbeafe" />
+        <SymbolView name="dollarsign.circle.fill" size={16} tintColor={financeSurfaces.onHero.secondary} />
         <Text style={styles.heroLabel}>NET WORTH {year ?? ''}</Text>
       </View>
       <Text style={[styles.heroValue, tabularNums]} numberOfLines={1} adjustsFontSizeToFit selectable>
@@ -66,7 +66,7 @@ export function HeroCard({ history, year }: { history: NetWorthEntry[] | undefin
         hitSlop={8}
         style={styles.detailsToggle}>
         <Text style={styles.heroStatLabel}>{open ? 'HIDE DETAILS' : 'SHOW DETAILS'}</Text>
-        <SymbolView name={open ? 'chevron.up' : 'chevron.down'} size={12} weight="semibold" tintColor="#bfdbfe" />
+        <SymbolView name={open ? 'chevron.up' : 'chevron.down'} size={12} weight="semibold" tintColor={financeSurfaces.onHero.tertiary} />
       </Pressable>
       {open && (
         <Animated.View
@@ -165,16 +165,16 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: radius.xl,
     borderCurve: 'continuous',
-    backgroundImage: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-    boxShadow: '0 10px 24px rgba(37,99,235,0.28)',
+    backgroundImage: `linear-gradient(135deg, ${financeSurfaces.hero.from} 0%, ${financeSurfaces.hero.to} 100%)`,
+    boxShadow: `0 10px 24px ${financeSurfaces.hero.shadow}`,
   },
-  heroLabel: { color: '#dbeafe', fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
-  heroValue: { color: '#fff', fontSize: 38, lineHeight: 44, fontWeight: '700' },
-  heroDivider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(191,219,254,0.4)', marginTop: spacing.md },
+  heroLabel: { color: financeSurfaces.onHero.secondary, fontSize: 11, fontWeight: '600', letterSpacing: 0.8 },
+  heroValue: { color: financeSurfaces.onHero.primary, fontSize: 38, lineHeight: 44, fontWeight: '700' },
+  heroDivider: { height: StyleSheet.hairlineWidth, backgroundColor: financeSurfaces.onHero.divider, marginTop: spacing.md },
   detailsToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: spacing.sm },
   heroGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md, marginTop: spacing.sm },
   heroStat: { width: '50%', paddingRight: spacing.md, gap: 2 },
-  heroStatLabel: { color: '#bfdbfe', fontSize: 10, fontWeight: '600', letterSpacing: 0.6 },
+  heroStatLabel: { color: financeSurfaces.onHero.tertiary, fontSize: 10, fontWeight: '600', letterSpacing: 0.6 },
   listHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -195,8 +195,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.separator,
   },
-  currentRow: { backgroundColor: 'rgba(250, 204, 21, 0.16)' },
-  nowDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#eab308' },
+  currentRow: { backgroundColor: colors.noticeBackground },
+  nowDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.notice },
   dash: { color: colors.tertiaryLabel },
 });
 

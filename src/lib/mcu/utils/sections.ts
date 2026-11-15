@@ -54,7 +54,7 @@ export function categorySections(categories: ExpandedCategory[], watched: Watche
     return {
       key: `saga-${category.id}`,
       title: category.title,
-      subtitle: category.blurb ? `${category.blurb} · ${metrics}` : metrics,
+      subtitle: metrics,
       color: category.color,
       cards: [{ key: category.id, label: category.title.toUpperCase(), color: category.color, items: category.items, stats }],
       isCategory: true,

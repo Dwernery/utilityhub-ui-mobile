@@ -1,30 +1,33 @@
 export type BookStatus = 'UNREAD' | 'IN_PROGRESS' | 'READ';
 
+// Mirrors the API's BookResponseDTO / AuthorResponseDTO / SeriesResponseDTO.
+// Every field is always present in the JSON; "| null" marks the ones that can be empty.
 export interface Book {
-  id: string;
+  id: number;
   title: string;
   authorName: string;
-  seriesName?: string | null;
-  pages?: number | null;
-  currentPage?: number | null;
+  seriesName: string | null;
+  pages: number;
+  currentPage: number | null;
   status: BookStatus;
   /** `YYYY-MM-DD` */
-  startDate?: string | null;
+  startDate: string | null;
   /** `YYYY-MM-DD` */
-  endDate?: string | null;
-  rating?: number | null;
-  isbn13?: string | null;
+  endDate: string | null;
+  /** 1–5 */
+  rating: number | null;
+  isbn13: string | null;
   /** Cover image URL */
-  s3Url?: string | null;
+  s3Url: string | null;
 }
 
 export interface Author {
-  id: string;
+  id: number;
   fullName: string;
 }
 
 export interface Series {
-  id: string;
+  id: number;
   name: string;
 }
 
@@ -37,7 +40,7 @@ export interface NewBookInput {
 }
 
 /** PATCH payload — only defined fields are sent. */
-export type BookUpdate = { id: string } & Partial<{
+export type BookUpdate = { id: number } & Partial<{
   title: string;
   authorName: string;
   seriesName: string | null;

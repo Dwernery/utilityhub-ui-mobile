@@ -9,6 +9,11 @@ import type {
   Phase,
   TvItem,
 } from '../types';
+import { compareIsoDates } from '@/lib/dates';
+
+// The API doesn't send colors, so every phase and expanded-universe category uses these.
+const PHASE_COLOR = '#4C8DFF';
+const EXPANDED_CATEGORY_COLOR = '#B91C1C';
 
 /** Pre-normalization item: premiereDate is still the raw API date string. */
 type RawItem<T extends McuItem> = Omit<T, 'premiereDate'> & { premiereDate?: string };
@@ -24,7 +29,7 @@ function normalizeShow(source: ApiShow): RawItem<TvItem>[] {
       type: 'tv',
       title: source.title,
       seasonNumber,
-      premiereDate: season.premiereDate || source.premiereDate,
+      premiereDate: source.premiereDate,
       synopsis: source.synopsis,
       s3Url: source.s3Url,
       episodes: (season.episodes ?? []).map((episode) => ({
@@ -50,7 +55,6 @@ function normalizeMovie(source: ApiMovie): RawItem<MovieItem> {
   };
 }
 
-const dateValue = (d: string | undefined) => (d ? new Date(d).getTime() : NaN);
 
 function extractDomainItems(domain: ApiDomain | undefined): McuItem[] {
   const items: RawItem<McuItem>[] = [
@@ -59,7 +63,7 @@ function extractDomainItems(domain: ApiDomain | undefined): McuItem[] {
     ...(domain?.shows ?? []).flatMap(normalizeShow),
   ];
 
-  items.sort((a, b) => dateValue(a.premiereDate) - dateValue(b.premiereDate));
+  items.sort((a, b) => compareIsoDates(a.premiereDate ?? '', b.premiereDate ?? ''));
 
   return items.map(
     // premiereDate is a calendar date ("YYYY-MM-DD"); read the year from the string so the
@@ -83,7 +87,7 @@ export function normalizeTrackerData(apiData: McuTrackerResponse | null | undefi
     const phaseNumber = phaseMatch ? parseInt(phaseMatch[1], 10) : null;
 
     if (phaseNumber) {
-      phaseMap[phaseNumber] ??= { num: phaseNumber, color: domain.color || '#4C8DFF', items: [] };
+      phaseMap[phaseNumber] ??= { num: phaseNumber, color: PHASE_COLOR, items: [] };
       phaseMap[phaseNumber].items.push(...extractDomainItems(domain));
     } else {
       expandedDomains.push(domain);
@@ -95,8 +99,7 @@ export function normalizeTrackerData(apiData: McuTrackerResponse | null | undefi
   const expandedCategories = expandedDomains.map((domain) => ({
     id: domain.domainName?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
     title: domain.domainName || 'Unknown',
-    color: domain.color || '#B91C1C',
-    blurb: domain.blurb || '',
+    color: EXPANDED_CATEGORY_COLOR,
     items: extractDomainItems(domain),
   }));
 

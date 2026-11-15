@@ -15,13 +15,13 @@ import {
   useRemoveAccountBalance,
   useSetAccountBalance,
 } from '@/lib/finance/hooks';
-import type { Account, AccountBalance, AccountCategory } from '@/lib/finance/types';
-import { Currencyformatter } from '@/lib/finance/utils/currency';
+import type { AccountCategory } from '@/lib/finance/types';
+import { Currencyformatter, parseMoney } from '@/lib/finance/utils/currency';
 import { MONTH_LABELS } from '@/lib/finance/utils/metrics';
 import { ASSET_TYPES, monthAccounts } from '@/lib/finance/utils/monthly';
+import { parseMonthKey } from '@/lib/routeParams';
 
 const fmt = (n: number) => Currencyformatter.format(n);
-const accountId = (a: { id?: string; accountId?: string }) => String(a.id || a.accountId);
 
 type Row = ReturnType<typeof monthAccounts>['assets'][number];
 
@@ -30,15 +30,15 @@ const SECTION = {
   LIABILITY: { title: 'Liabilities', icon: 'chart.line.downtrend.xyaxis', tint: colors.negative, glyph: 'creditcard', newName: 'e.g. Personal Loan' },
 } as const satisfies Record<AccountCategory, { title: string; icon: SFSymbol; tint: unknown; glyph: SFSymbol; newName: string }>;
 
-/** iOS text prompt with a decimal keypad; resolves the parsed number, or null if cancelled/invalid. */
-function promptAmount(title: string, message: string | undefined, initial = ''): Promise<number | null> {
+/** iOS text prompt with a decimal keypad; resolves the typed text, or null if cancelled. */
+function promptAmount(title: string, message: string | undefined, initial = ''): Promise<string | null> {
   return new Promise((resolve) => {
     Alert.prompt(
       title,
       message,
       [
         { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
-        { text: 'Save', onPress: (v?: string) => resolve(v == null || v.trim() === '' ? NaN : parseFloat(v)) },
+        { text: 'Save', onPress: (v?: string) => resolve(v ?? '') },
       ],
       'plain-text',
       initial,
@@ -72,10 +72,27 @@ function actionSheet(title: string, options: string[], destructiveIndex?: number
 
 /** One month's account balances (ported from the web MonthlyDetailModal). */
 export default function MonthDetail() {
-  const { key = '' } = useLocalSearchParams<{ key: string }>();
-  const date = `${key}-01`;
-  const [y, m] = key.split('-').map(Number);
-  const title = `${MONTH_LABELS[(m || 1) - 1]} ${y}`;
+  const month = parseMonthKey(useLocalSearchParams<{ key: string }>().key);
+
+  // Validate the URL before any data hooks run: a bad deep link gets a clear message,
+  // not a sheet titled "undefined NaN" that sends requests for "garbage-01".
+  if (!month) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Month' }} />
+        <SheetCloseButton />
+        <View style={styles.missing}>
+          <Text style={[type.subheadline, { color: colors.secondaryLabel }]}>This month doesn’t exist.</Text>
+        </View>
+      </>
+    );
+  }
+  return <MonthSheet year={month.year} month={month.month} />;
+}
+
+function MonthSheet({ year, month: monthNumber }: { year: number; month: number }) {
+  const date = `${year}-${String(monthNumber).padStart(2, '0')}-01`;
+  const title = `${MONTH_LABELS[monthNumber - 1]} ${year}`;
 
   const { data: history } = useNetWorthHistory();
   const { data: allAccounts = [] } = useAccounts();
@@ -87,23 +104,25 @@ export default function MonthDetail() {
 
   const month = useMemo(() => monthAccounts(history, date), [history, date]);
 
-  const saveBalance = (account: Pick<AccountBalance, 'accountName'> & { id?: string; accountId?: string }, balance: number, verb: string) =>
+  const saveBalance = (accountId: number, accountName: string, balance: number, verb: string) =>
     setBalance.mutate(
-      { accountId: accountId(account), date, balance },
+      { accountId, date, balance },
       {
-        onSuccess: () => addToast(`${account.accountName} ${verb}`, 'success'),
+        onSuccess: () => addToast(`${accountName} ${verb}`, 'success'),
         onError: (e) => addToast(e.message || 'Failed to update balance', 'error'),
       },
     );
 
   const askBalance = async (name: string, initial = '') => {
-    const v = await promptAmount(name, `Balance for ${title}`, initial);
-    if (v === null) return null;
-    if (Number.isNaN(v)) {
-      addToast('Please enter a valid number', 'error');
+    const text = await promptAmount(name, `Balance for ${title}`, initial);
+    if (text === null) return null;
+    // Balances may be negative (e.g. an overdrawn account), unlike transactions and income.
+    const parsed = parseMoney(text, { allowNegative: true });
+    if (!parsed.ok) {
+      addToast(parsed.error, 'error');
       return null;
     }
-    return v;
+    return parsed.value;
   };
 
   const onRow = async (row: Row) => {
@@ -111,7 +130,7 @@ export default function MonthDetail() {
     const choice = await actionSheet(row.accountName, ['Edit Balance', 'Remove from Month'], 1);
     if (choice === 0) {
       const v = await askBalance(row.accountName, String(row.balance));
-      if (v !== null) saveBalance(row, v, 'balance updated');
+      if (v !== null) saveBalance(row.accountId, row.accountName, v, 'balance updated');
     } else if (choice === 1) {
       Alert.alert(`Delete ${row.accountName} from this month?`, undefined, [
         { text: 'Cancel', style: 'cancel' },
@@ -120,7 +139,7 @@ export default function MonthDetail() {
           style: 'destructive',
           onPress: () =>
             removeBalance.mutate(
-              { accountId: accountId(row), date },
+              { accountId: row.accountId, date },
               {
                 onSuccess: () => addToast(`${row.accountName} removed from this month`, 'success'),
                 onError: (e) => addToast(e.message || 'Failed to delete account', 'error'),
@@ -133,8 +152,8 @@ export default function MonthDetail() {
 
   const onAdd = async (category: AccountCategory) => {
     haptics.selection();
-    const present = new Set([...month.assets, ...month.liabilities].map(accountId));
-    const available = allAccounts.filter((a) => a.category === category && !present.has(accountId(a)));
+    const present = new Set([...month.assets, ...month.liabilities].map((row) => row.accountId));
+    const available = allAccounts.filter((a) => a.category === category && !present.has(a.id));
     const choice = await actionSheet(
       `Add ${SECTION[category].title.slice(0, -1).toLowerCase()} for ${title}`,
       [...available.map((a) => `${a.accountName} (${a.accountType})`), 'New Account…'],
@@ -144,7 +163,7 @@ export default function MonthDetail() {
     if (choice < available.length) {
       const account = available[choice];
       const v = await askBalance(account.accountName);
-      if (v !== null) saveBalance(account, v, 'added for this month');
+      if (v !== null) saveBalance(account.id, account.accountName, v, 'added for this month');
       return;
     }
 
@@ -166,8 +185,12 @@ export default function MonthDetail() {
     if (balance === null) return;
 
     try {
-      const created: Account = await createAccount.mutateAsync({ name, type: accountType, category });
-      await setBalance.mutateAsync({ accountId: accountId(created), date, balance });
+      await createAccount.mutateAsync({
+        accountName: name,
+        accountType,
+        category,
+        initialBalance: { balance, date },
+      });
       addToast(`${name} created and added for this month`, 'success');
     } catch (e) {
       addToast((e as Error).message || 'Failed to create account', 'error');
@@ -181,14 +204,14 @@ export default function MonthDetail() {
       <ScreenScrollView sideInsets={false} contentContainerStyle={styles.content}>
         <View style={styles.header} accessible accessibilityLabel={`${title} net worth ${fmt(month.netWorth)}`}>
           <Text style={[type.footnote, { color: colors.secondaryLabel }]}>Net worth</Text>
-          <Text style={[type.title1, tabularNums, { color: '#1d4ed8' }]} selectable>
+          <Text style={[type.title1, tabularNums, { color: colors.emphasis }]} selectable>
             {fmt(month.netWorth)}
           </Text>
         </View>
 
         {!month.hasData && (
           <View style={styles.notice}>
-            <SymbolView name="exclamationmark.circle.fill" size={20} tintColor="#ca8a04" />
+            <SymbolView name="exclamationmark.circle.fill" size={20} tintColor={colors.notice} />
             <View style={{ flex: 1 }}>
               <Text style={[type.subheadline, { color: colors.label, fontWeight: '600' }]}>No data for this month yet</Text>
               <Text style={[type.footnote, { color: colors.secondaryLabel }]}>
@@ -226,7 +249,7 @@ export default function MonthDetail() {
                     const tone = good === null ? colors.secondaryLabel : good ? colors.positive : colors.negative;
                     return (
                       <Pressable
-                        key={accountId(row)}
+                        key={row.accountId}
                         onPress={() => onRow(row)}
                         disabled={busy}
                         accessibilityRole="button"
@@ -274,7 +297,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radius.lg,
     borderCurve: 'continuous',
-    backgroundColor: 'rgba(250, 204, 21, 0.14)',
+    backgroundColor: colors.noticeBackground,
   },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.xs },
   sectionTitle: { flex: 1, fontSize: 13, fontWeight: '700', letterSpacing: 0.8 },
@@ -283,4 +306,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator },
   emptyRow: { color: colors.tertiaryLabel, padding: spacing.lg },
+  missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

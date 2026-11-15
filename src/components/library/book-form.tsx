@@ -10,7 +10,7 @@ import { accents, colors, spacing } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import { useLibrary } from '@/lib/library/context';
 import type { BookStatus } from '@/lib/library/types';
-import { parseLocalDate, todayLocalIso, toIsoDate } from '@/lib/library/utils/dateUtils';
+import { parseLocalDate, toIsoDate, todayIso } from '@/lib/dates';
 import type { PickedFile } from '@/lib/library/utils/s3Upload';
 
 import { FilePickerButton } from './file-picker-button';
@@ -44,10 +44,10 @@ export function applyStatus(draft: BookDraft, status: BookStatus): BookDraft {
     next.endDate = null;
   } else if (status === 'IN_PROGRESS') {
     next.endDate = null;
-    next.startDate ??= todayLocalIso();
+    next.startDate ??= todayIso();
   } else {
-    next.startDate ??= todayLocalIso();
-    next.endDate ??= todayLocalIso();
+    next.startDate ??= todayIso();
+    next.endDate ??= todayIso();
   }
   return next;
 }

@@ -14,12 +14,13 @@ import { accents, colors, radius, spacing, type } from '@/constants/theme';
 import { useToast } from '@/context/toast';
 import { haptics } from '@/lib/haptics';
 import { useBook, useDeleteBook, useUpdateBook } from '@/lib/library/hooks';
-import { formatDate } from '@/lib/library/utils/dateUtils';
+import { formatDate } from '@/lib/dates';
+import { parseIdParam } from '@/lib/routeParams';
 
 const STATUS_TEXT = { READ: 'Finished', IN_PROGRESS: 'Reading', UNREAD: 'Unread' } as const;
 
 export default function BookDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const id = parseIdParam(useLocalSearchParams<{ id: string }>().id);
   const { data: book, isPending } = useBook(id);
   const updateBook = useUpdateBook();
   const deleteBook = useDeleteBook();

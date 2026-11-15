@@ -12,12 +12,14 @@ import { accents, colors, spacing, type } from '@/constants/theme';
 import { useToast } from '@/context/toast';
 import { useTransactions, useUpdateTransaction } from '@/lib/finance/hooks';
 import type { Transaction } from '@/lib/finance/types';
+import { parseMoney } from '@/lib/finance/utils/currency';
+import { parseIdParam } from '@/lib/routeParams';
 
 /** Edit a transaction's name, amount and paid flag (the web's inline edit form). */
 export default function EditTransaction() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const id = parseIdParam(useLocalSearchParams<{ id: string }>().id);
   const { data: transactions = [] } = useTransactions();
-  const t = transactions.find((x) => String(x.id) === String(id));
+  const t = transactions.find((x) => x.id === id);
 
   if (!t) {
     return (
@@ -44,11 +46,11 @@ function Form({ t }: { t: Transaction }) {
   const dirty = name !== t.name || amount !== String(t.amount) || paid !== !!t.paid;
 
   const save = () => {
-    const value = parseFloat(amount);
-    if (Number.isNaN(value)) return addToast('Please enter a valid amount', 'error');
+    const parsed = parseMoney(amount);
+    if (!parsed.ok) return addToast(parsed.error, 'error');
     if (!name.trim()) return addToast('Please enter a transaction name', 'error');
     update.mutate(
-      { id: t.id, name, amount: value, paid },
+      { id: t.id, name, amount: parsed.value, paid },
       {
         onSuccess: () => {
           addToast('Transaction updated successfully', 'success');
@@ -73,7 +75,7 @@ function Form({ t }: { t: Transaction }) {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingLeft: spacing.lg + insets.left, paddingRight: spacing.lg + insets.right }]}>
         <FormSection>
-          <FormTextField label="Name" value={name} onChangeText={setName} placeholder="Transaction name" autoFocus editable={!update.isPending} />
+          <FormTextField label="Name" value={name} onChangeText={setName} placeholder="Transaction name" editable={!update.isPending} />
           <FormTextField
             label="Amount"
             value={amount}

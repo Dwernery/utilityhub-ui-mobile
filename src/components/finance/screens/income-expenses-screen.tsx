@@ -6,7 +6,7 @@ import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-
 
 import { FinanceSwitcher } from '@/components/finance/finance-switcher';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
-import { accents, colors, radius, spacing, tabularNums, type } from '@/constants/theme';
+import { accents, colors, financeSurfaces, radius, spacing, tabularNums, type } from '@/constants/theme';
 import { useToast } from '@/context/toast';
 import { haptics } from '@/lib/haptics';
 import { useIsWide } from '@/hooks/use-is-wide';
@@ -142,12 +142,12 @@ export default function IncomeExpenses() {
           <>
             <View style={[styles.tiles, wide && styles.tileRow]}>
               <View style={[styles.tileRow, wide && styles.flex]}>
-                <Tile label="Total Income" value={totals.income} color="#10b981" />
-                <Tile label="Total Expenses" value={totals.expenses} color="#f43f5e" />
+                <Tile label="Total Income" value={totals.income} color={financeSurfaces.tile.income} />
+                <Tile label="Total Expenses" value={totals.expenses} color={financeSurfaces.tile.expense} />
               </View>
               <View style={[styles.tileRow, wide && styles.flex]}>
-                <Tile label="Net Cash Flow" value={totals.netCashFlow} color={positive ? '#3b82f6' : '#f97316'} />
-                <Tile label="Net Income" value={totals.netIncome} color={positive ? '#3b82f6' : '#f97316'} />
+                <Tile label="Net Cash Flow" value={totals.netCashFlow} color={positive ? financeSurfaces.tile.positive : financeSurfaces.tile.negative} />
+                <Tile label="Net Income" value={totals.netIncome} color={positive ? financeSurfaces.tile.positive : financeSurfaces.tile.negative} />
               </View>
             </View>
 
@@ -216,8 +216,8 @@ const styles = StyleSheet.create({
   columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
   tileRow: { flexDirection: 'row', gap: spacing.sm },
   tile: { flex: 1, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', alignItems: 'center', gap: 2 },
-  tileLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: '600', letterSpacing: 0.6 },
-  tileValue: { color: '#fff', fontSize: 20, fontWeight: '700' },
+  tileLabel: { color: financeSurfaces.onTile.secondary, fontSize: 10, fontWeight: '600', letterSpacing: 0.6 },
+  tileValue: { color: financeSurfaces.onTile.primary, fontSize: 20, fontWeight: '700' },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.xs },
   sectionTitle: { fontSize: 13, fontWeight: '700', letterSpacing: 0.8 },
   group: { borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: colors.secondaryGroupedBackground },

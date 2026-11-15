@@ -11,7 +11,7 @@ import { useToast } from '@/context/toast';
 import { haptics } from '@/lib/haptics';
 import { useUpdateBook } from '@/lib/library/hooks';
 import type { Book } from '@/lib/library/types';
-import { todayIso } from '@/lib/library/utils/dateUtils';
+import { todayIso } from '@/lib/dates';
 import { readingProgress } from '@/lib/library/utils/homeStats';
 
 function PillButton({ title, icon, tint, onPress, disabled }: {

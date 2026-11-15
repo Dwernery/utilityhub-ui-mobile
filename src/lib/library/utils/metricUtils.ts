@@ -1,5 +1,5 @@
 import type { Book, StatusFilter } from '../types';
-import { parseLocalDate } from './dateUtils';
+import { parseLocalDate } from '@/lib/dates';
 
 export const filterBooks = (books: Book[], normalizedSearch: string, statusFilter: StatusFilter): Book[] =>
   books.filter((book) => {

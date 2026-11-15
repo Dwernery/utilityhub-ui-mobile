@@ -6,7 +6,8 @@ import { plural, seriesStats } from '@/lib/library/utils/groupStats';
 
 export default function SeriesDetail() {
   const { name = '' } = useLocalSearchParams<{ name: string }>();
-  const { data: books = [] } = useBooks();
+  const booksQuery = useBooks();
+  const books = booksQuery.data ?? [];
   const s = seriesStats(books, name);
 
   return (
@@ -19,6 +20,7 @@ export default function SeriesDetail() {
         { value: s.avgRating ?? '—', label: 'Avg ★' },
       ]}
       books={s.books}
+      query={booksQuery}
       secondary="author"
     />
   );

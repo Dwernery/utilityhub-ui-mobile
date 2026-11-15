@@ -18,6 +18,12 @@ export const colors = {
   positive: Color.ios.systemGreen,
   negative: Color.ios.systemRed,
   warning: Color.ios.systemOrange,
+  /** Emphasized figures (e.g. a month's net worth). systemBlue lightens in dark mode, so it stays readable. */
+  emphasis: Color.ios.systemBlue,
+  /** "Heads up" marks: the current month, a month with no data yet. */
+  notice: Color.ios.systemYellow,
+  /** Translucent, so it tints whatever is behind it in light and dark mode alike. */
+  noticeBackground: 'rgba(250, 204, 21, 0.15)',
   white: '#ffffff',
 } as const;
 
@@ -34,6 +40,25 @@ export const accentHex = {
   library: '#007AFF',
   finances: '#34C759',
   mcu: '#FF3B30',
+} as const;
+
+/**
+ * Finance's tinted surfaces: the net-worth hero card and the Income & Expenses tiles.
+ * They are fixed colored cards with light text, correct in both appearances, so they
+ * don't follow the system theme. Hex because they're CSS gradients, which can't take PlatformColor.
+ */
+export const financeSurfaces = {
+  hero: { from: '#2563eb', to: '#1d4ed8', shadow: 'rgba(37, 99, 235, 0.28)' },
+  onHero: {
+    primary: '#ffffff',
+    secondary: '#dbeafe', // blue-100
+    tertiary: '#bfdbfe', // blue-200
+    divider: 'rgba(191, 219, 254, 0.4)',
+    positive: '#6ee7b7', // emerald-300: readable on the blue card
+    negative: '#fda4af', // rose-300
+  },
+  tile: { income: '#10b981', expense: '#f43f5e', positive: '#3b82f6', negative: '#f97316' },
+  onTile: { primary: '#ffffff', secondary: 'rgba(255, 255, 255, 0.85)' },
 } as const;
 
 /** MCU is a dark-themed section; these are fixed regardless of system appearance. */

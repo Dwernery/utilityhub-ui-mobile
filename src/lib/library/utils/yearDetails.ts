@@ -1,5 +1,5 @@
 import type { Book } from '../types';
-import { parseLocalDate } from './dateUtils';
+import { compareIsoDates, daysBetween, isoYear } from '@/lib/dates';
 import type { YearComparison } from './metricUtils';
 
 export type GraphMetric = 'books' | 'pages' | 'rating';
@@ -21,14 +21,12 @@ export const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Au
 /** Books finished in `year`, newest first, with days-to-finish (ported from BooksPerYearDetails). */
 export function finishedInYear(books: Book[], year: number) {
   return books
-    .filter((b) => b.status === 'READ' && b.endDate && parseLocalDate(b.endDate)?.getFullYear() === year)
-    .sort((a, b) => parseLocalDate(b.endDate)!.getTime() - parseLocalDate(a.endDate)!.getTime())
-    .map((book) => {
-      const start = parseLocalDate(book.startDate);
-      const end = parseLocalDate(book.endDate);
-      const days = start && end ? Math.ceil((end.getTime() - start.getTime()) / 86_400_000) : null;
-      return { book, days };
-    });
+    .filter((b) => b.status === 'READ' && b.endDate && isoYear(b.endDate) === year)
+    .sort((a, b) => compareIsoDates(b.endDate!, a.endDate!))
+    .map((book) => ({
+      book,
+      days: book.startDate && book.endDate ? daysBetween(book.startDate, book.endDate) : null,
+    }));
 }
 
 /** `+3` / `-2` / `0` and `+25` / `-10` for the trend pills. */

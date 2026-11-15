@@ -10,18 +10,22 @@ import { FormSheetToolbar } from '@/components/ui/form-sheet-toolbar';
 import { accents, colors, spacing } from '@/constants/theme';
 import { useToast } from '@/context/toast';
 import { useDeleteIncomeSource, useIncomeSources, useSaveIncomeSource } from '@/lib/finance/hooks';
+import { parseMoney } from '@/lib/finance/utils/currency';
+import { parseIdParam } from '@/lib/routeParams';
 
 /** Add (`id = new`, with `year`) or edit/delete an income source (the web's Income History modal). */
 export default function IncomeSourceSheet() {
-  const { id, year } = useLocalSearchParams<{ id: string; year?: string }>();
+  const params = useLocalSearchParams<{ id: string; year?: string }>();
+  const id = parseIdParam(params.id); // undefined for "new"
+  const year = params.year;
   const { data: sources = [] } = useIncomeSources();
-  const existing = id !== 'new' ? sources.find((s) => String(s.id) === String(id)) : undefined;
+  const existing = id === undefined ? undefined : sources.find((s) => s.id === id);
   const yearNum = existing?.year ?? Number(year);
 
-  return <Form key={existing?.id ?? 'new'} id={existing ? String(existing.id) : undefined} year={yearNum} initialName={existing?.name ?? ''} initialAmount={existing ? String(existing.amount) : ''} />;
+  return <Form key={existing?.id ?? 'new'} id={existing?.id} year={yearNum} initialName={existing?.name ?? ''} initialAmount={existing ? String(existing.amount) : ''} />;
 }
 
-function Form({ id, year, initialName, initialAmount }: { id?: string; year: number; initialName: string; initialAmount: string }) {
+function Form({ id, year, initialName, initialAmount }: { id?: number; year: number; initialName: string; initialAmount: string }) {
   const insets = useSafeAreaInsets();
   const keyboardInset = useKeyboardInset();
   const save = useSaveIncomeSource();
@@ -33,11 +37,11 @@ function Form({ id, year, initialName, initialAmount }: { id?: string; year: num
   const dirty = name !== initialName || amount !== initialAmount;
 
   const onSave = () => {
-    const value = parseFloat(amount);
-    if (Number.isNaN(value)) return addToast('Please enter a valid amount', 'error');
+    const parsed = parseMoney(amount);
+    if (!parsed.ok) return addToast(parsed.error, 'error');
     if (!name.trim()) return addToast('Please enter a source name', 'error');
     save.mutate(
-      { id, year, name, amount: value },
+      { id, year, name, amount: parsed.value },
       {
         onSuccess: () => {
           addToast(id ? 'Income source updated' : 'Income source added', 'success');
@@ -77,7 +81,7 @@ function Form({ id, year, initialName, initialAmount }: { id?: string; year: num
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingLeft: spacing.lg + insets.left, paddingRight: spacing.lg + insets.right }]}>
         <FormSection>
-          <FormTextField label="Source" value={name} onChangeText={setName} placeholder="e.g. Salary" autoFocus={!id} editable={!busy} />
+          <FormTextField label="Source" value={name} onChangeText={setName} placeholder="e.g. Salary" editable={!busy} />
           <FormTextField label="Amount" value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" editable={!busy} />
         </FormSection>
         {id && (

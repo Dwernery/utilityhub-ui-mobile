@@ -108,7 +108,7 @@ export function FinancesHomeCard() {
                     <SectionLabel icon="building.columns">Accounts</SectionLabel>
                     <View>
                       {s.accountChanges.map((a, i) => (
-                        <View key={a.id || a.accountId}>
+                        <View key={a.accountId}>
                           {i > 0 && <View style={styles.rowSeparator} />}
                           <AccountRow account={a} fmt={fmt} />
                         </View>
@@ -146,7 +146,7 @@ export function FinancesHomeCard() {
                   <CardDivider />
                   <View>
                     {s.accountChanges.map((a, i) => (
-                      <View key={a.id || a.accountId}>
+                      <View key={a.accountId}>
                         {i > 0 && <View style={styles.rowSeparator} />}
                         <AccountRow account={a} fmt={fmt} />
                       </View>

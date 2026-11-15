@@ -1,8 +1,6 @@
 import type { AccountBalance, NetWorthEntry, Transaction } from '../types';
+import { byDate, isoMonth, isoYear, previousMonthIso } from '../../dates';
 
-const yearOf = (e: NetWorthEntry) => parseInt((e?.date || '').split('-')[0]);
-const monthOf = (e: NetWorthEntry) => parseInt((e?.date || '').split('-')[1]);
-const byDate = (a: NetWorthEntry, b: NetWorthEntry) => new Date(a.date).getTime() - new Date(b.date).getTime();
 
 export interface AccountChange extends AccountBalance {
   change: number | null;
@@ -32,27 +30,21 @@ export function financeHomeSummary(
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  const entriesForYear = all.filter((e) => yearOf(e) === currentYear).sort(byDate);
-  const fullMonths = entriesForYear.filter((e) => monthOf(e) !== currentMonth);
+  const entriesForYear = all.filter((e) => isoYear(e.date) === currentYear).sort(byDate);
+  const fullMonths = entriesForYear.filter((e) => isoMonth(e.date) !== currentMonth);
   const latestFullMonthEntry = fullMonths.at(-1) ?? null;
   const latestEntry = entriesForYear.at(-1) ?? null;
 
   // Account changes vs. the calendar month directly before the latest snapshot
   let accountChanges: AccountChange[] = [];
   if (latestEntry?.accounts?.length) {
-    const [y, m] = latestEntry.date.split('-');
-    const prev = new Date(parseInt(y), parseInt(m) - 1, 1);
-    prev.setMonth(prev.getMonth() - 1);
-    const prevDate = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-01`;
+    const prevDate = previousMonthIso(latestEntry.date);
     const prevEntry = all.find((e) => e.date === prevDate);
 
     accountChanges = latestEntry.accounts
       .filter((a) => a.category !== 'LIABILITY')
       .map((account) => {
-        const key = account.id || account.accountId;
-        const prevAccount = prevEntry?.accounts?.find(
-          (a) => (a.id || a.accountId) === key || a.accountName === account.accountName,
-        );
+        const prevAccount = prevEntry?.accounts?.find((a) => a.accountId === account.accountId);
         if (!prevAccount) return { ...account, change: null, percentChange: null };
         const prevBalance = prevAccount.balance || 0;
         const change = (account.balance || 0) - prevBalance;

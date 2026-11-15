@@ -45,7 +45,7 @@ export default function AddBook() {
 
       if (file && created?.id) {
         try {
-          await s3.uploadFile(file, String(created.id), 'cover');
+          await s3.uploadFile(file, created.id, 'cover');
           addToast(`Book "${title}" saved and file uploaded`, 'success');
         } catch (e) {
           addToast(`Book saved, but file upload failed: ${(e as Error)?.message || 'Unknown error'}`, 'warning');

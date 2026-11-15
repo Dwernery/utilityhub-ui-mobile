@@ -1,5 +1,5 @@
 import type { Book } from '../types';
-import { parseLocalDate } from './dateUtils';
+import { daysBetween, parseLocalDate, toIsoDate } from '@/lib/dates';
 
 export interface ReadingStats {
   booksRead: number;
@@ -32,7 +32,6 @@ export function libraryHomeStats(books: Book[], year = new Date().getFullYear())
 export function readingProgress(book: Book, now = new Date()) {
   const raw = ((book.currentPage ?? 0) / (book.pages || 0)) * 100;
   const pct = Math.min(100, Math.max(0, Math.round(Number.isFinite(raw) ? raw : 0)));
-  const start = parseLocalDate(book.startDate);
-  const days = start ? Math.max(0, Math.floor((now.getTime() - start.getTime()) / 86_400_000)) : null;
+  const days = book.startDate ? Math.max(0, daysBetween(book.startDate, toIsoDate(now))) : null;
   return { pct, days };
 }

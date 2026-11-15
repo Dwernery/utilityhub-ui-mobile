@@ -5,7 +5,7 @@ import { useToast } from '@/context/toast';
 import * as api from './api';
 import { AUTHORS_KEY, BOOKS_KEY, SERIES_KEY } from './queryKeys';
 import type { Book } from './types';
-import { todayIso } from './utils/dateUtils';
+import { todayIso } from '@/lib/dates';
 import { uploadFileToS3, validateFile, type PickedFile } from './utils/s3Upload';
 
 // ── Queries ────────────────────────────────────────────────────────────────
@@ -23,9 +23,9 @@ export function useSeries() {
 }
 
 /** Single book derived from the books cache, so sheets always reflect the latest server state. */
-export function useBook(id: string | undefined) {
+export function useBook(id: number | undefined) {
   const query = useBooks();
-  return { ...query, data: id ? query.data?.find((b) => String(b.id) === String(id)) : undefined };
+  return { ...query, data: id === undefined ? undefined : query.data?.find((b) => b.id === id) };
 }
 
 // ── Mutations ──────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ export function useS3Upload() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async ({ file, bookId, fileType = 'cover' }: { file: PickedFile; bookId: string; fileType?: string }) => {
+    mutationFn: async ({ file, bookId, fileType = 'cover' }: { file: PickedFile; bookId: number; fileType?: string }) => {
       const validation = validateFile(file);
       if (!validation.valid) throw new Error(validation.error);
 
@@ -99,7 +99,7 @@ export function useS3Upload() {
   });
 
   return {
-    uploadFile: (file: PickedFile, bookId: string, fileType?: string) =>
+    uploadFile: (file: PickedFile, bookId: number, fileType?: string) =>
       mutation.mutateAsync({ file, bookId, fileType }),
     isUploading: mutation.isPending,
     /** 0–1 */

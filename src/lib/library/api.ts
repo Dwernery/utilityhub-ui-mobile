@@ -93,7 +93,7 @@ export function getPresignedUploadUrl(fileName: string, fileType: string) {
 }
 
 /** Associate an uploaded S3 object with a book. */
-export function attachFileToBook(bookId: string, s3Key: string, fileType = 'cover') {
+export function attachFileToBook(bookId: number, s3Key: string, fileType = 'cover') {
   return requestJson<unknown>(`/api/library/books/${bookId}/attach-file`, {
     method: 'POST',
     body: { s3Key, fileType },
@@ -104,7 +104,7 @@ export function attachFileToBook(bookId: string, s3Key: string, fileType = 'cove
 
 // NOTE: rating updates are handled via `updateBook({ id, rating })` (PATCH).
 
-export async function deleteBook(id: string) {
+export async function deleteBook(id: number) {
   await requestVoid(`/api/library/books/${id}`, {
     method: 'DELETE',
     errorMessage: 'Failed to delete book',

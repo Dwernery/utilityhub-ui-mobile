@@ -8,20 +8,22 @@ import { SheetCloseButton } from '@/components/ui/sheet-close-button';
 import { accents, colors, radius, spacing, type } from '@/constants/theme';
 import { useBooks, useStartReading } from '@/lib/library/hooks';
 import type { Book } from '@/lib/library/types';
+import { LoadError } from '@/components/ui/load-error';
+import { SkeletonListGroup } from '@/components/ui/skeleton';
 
 /** Pick an unread book to start (ported from StartReadingModal; opened from Metrics → Currently Reading). */
 export default function StartReading() {
-  const { data: books = [] } = useBooks();
+  const { data, isPending: booksLoading, isError, error, refetch } = useBooks();
   const { startReading, isPending } = useStartReading();
   const [search, setSearch] = useState('');
 
   const unread = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return books
+    return (data ?? [])
       .filter((b) => b.status === 'UNREAD')
       .filter((b) => !q || b.title.toLowerCase().includes(q) || b.authorName.toLowerCase().includes(q))
       .sort((a, b) => a.title.localeCompare(b.title));
-  }, [books, search]);
+  }, [data, search]);
 
   const start = (book: Book) => startReading(book, { onSuccess: () => router.back() });
 
@@ -45,9 +47,20 @@ export default function StartReading() {
         contentContainerStyle={styles.content}
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
         ListEmptyComponent={
-          <Text style={[type.subheadline, styles.empty]}>
-            {search ? 'No unread books match.' : 'No unread books.'}
-          </Text>
+          // Loading and failure are not "empty": only say "No unread books" once the list has loaded.
+          data === undefined ? (
+            booksLoading ? (
+              <View accessibilityLabel="Loading" accessibilityRole="progressbar">
+                <SkeletonListGroup rows={5} />
+              </View>
+            ) : (
+              <LoadError what="books" error={isError ? error : null} onRetry={() => refetch()} tint={accents.library} />
+            )
+          ) : (
+            <Text style={[type.subheadline, styles.empty]}>
+              {search ? 'No unread books match.' : 'No unread books.'}
+            </Text>
+          )
         }
         renderItem={({ item }) => (
           <Pressable

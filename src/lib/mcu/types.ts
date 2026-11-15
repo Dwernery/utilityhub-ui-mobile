@@ -2,47 +2,51 @@ export type WatchStatus = 'UNWATCHED' | 'IN_PROGRESS' | 'WATCHED';
 
 // ── Raw API shape (`GET /api/mcu/tracker`) ─────────────────────────────────
 
+// Mirrors the API's MCUTrackerResponseDTO tree.
+
 export interface ApiEpisode {
+  id: number;
   globalId: string;
   title: string;
   episodeNumber: number;
-  runtime?: number | null;
-  status?: WatchStatus | string | null;
+  runtime: number | null;
+  /** null when never set; treat as UNWATCHED (the DB column is nullable). */
+  status: WatchStatus | null;
 }
 
+/** The API sends exactly one season per show object. */
 export interface ApiSeason {
-  seasonNumber?: number;
-  premiereDate?: string;
-  episodes?: ApiEpisode[];
+  seasonNumber: number;
+  episodes: ApiEpisode[];
 }
 
 export interface ApiShow {
   globalId: string;
   title: string;
-  premiereDate?: string;
-  synopsis?: string | null;
-  s3Url?: string | null;
-  seasons?: ApiSeason[];
+  /** `YYYY-MM-DD` */
+  premiereDate: string;
+  synopsis: string | null;
+  s3Url: string | null;
+  seasons: ApiSeason[];
 }
 
 export interface ApiMovie {
   globalId: string;
   title: string;
-  /** `SPECIAL` for specials, otherwise a movie */
-  type?: string;
-  premiereDate?: string;
-  runtime?: number | null;
-  synopsis?: string | null;
-  s3Url?: string | null;
-  status?: WatchStatus | string | null;
+  type: 'MOVIE' | 'SPECIAL';
+  /** `YYYY-MM-DD` */
+  premiereDate: string;
+  runtime: number | null;
+  synopsis: string | null;
+  s3Url: string | null;
+  /** null when never set; treat as UNWATCHED (the DB column is nullable). */
+  status: WatchStatus | null;
 }
 
 export interface ApiDomain {
-  domainName?: string;
-  color?: string;
-  blurb?: string;
-  movies?: ApiMovie[];
-  shows?: ApiShow[];
+  domainName: string;
+  movies: ApiMovie[];
+  shows: ApiShow[];
 }
 
 export interface McuTrackerResponse {
@@ -94,7 +98,6 @@ export interface ExpandedCategory {
   id: string;
   title: string;
   color: string;
-  blurb: string;
   items: McuItem[];
 }
 

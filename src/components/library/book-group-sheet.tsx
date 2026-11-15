@@ -4,10 +4,13 @@ import { StyleSheet, Text, View } from 'react-native';
 import { MetricRow, type Metric } from '@/components/ui/metric-row';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { SheetCloseButton } from '@/components/ui/sheet-close-button';
-import { colors, radius, spacing, type } from '@/constants/theme';
+import { accents, colors, radius, spacing, type } from '@/constants/theme';
 import type { Book } from '@/lib/library/types';
 
 import { BookRow } from './book-row';
+import type { UseQueryResult } from '@tanstack/react-query';
+import { LoadError } from '@/components/ui/load-error';
+import { SkeletonListGroup } from '@/components/ui/skeleton';
 
 interface BookGroupSheetProps {
   title: string;
@@ -16,12 +19,32 @@ interface BookGroupSheetProps {
   books: Book[];
   /** Second line of each row. */
   secondary: 'series' | 'author';
+  /** The books query, so the sheet can show loading and error states instead of "0 books". */
+  query: Pick<UseQueryResult<Book[]>, 'data' | 'isPending' | 'error' | 'refetch'>;
 }
 
 const openBook = (book: Book) => router.push({ pathname: '/library/book/[id]', params: { id: String(book.id) } });
 
 /** Shared body for the author and series sheets: title, three stats, then the books. */
-export function BookGroupSheet({ title, subtitle, metrics, books, secondary }: BookGroupSheetProps) {
+export function BookGroupSheet({ title, subtitle, metrics, books, secondary, query }: BookGroupSheetProps) {
+  if (query.data === undefined) {
+    return (
+      <>
+        <Stack.Screen options={{ title }} />
+        <SheetCloseButton />
+        <ScreenScrollView sideInsets={false} contentContainerStyle={styles.content}>
+          {query.isPending ? (
+            <View accessibilityLabel="Loading" accessibilityRole="progressbar">
+              <SkeletonListGroup rows={3} />
+            </View>
+          ) : (
+            <LoadError what="books" error={query.error} onRetry={() => query.refetch()} tint={accents.library} />
+          )}
+        </ScreenScrollView>
+      </>
+    );
+  }
+
   return (
     <>
       <Stack.Screen options={{ title }} />

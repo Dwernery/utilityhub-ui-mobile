@@ -45,7 +45,7 @@ export function ProgressItemRow({
 }) {
   return (
     <View style={styles.itemRow} accessible accessibilityLabel={[title, meta, trailing, metaTrailing].filter(Boolean).join(', ')}>
-      <BookCover book={{ s3Url: coverUrl, title }} width={36} />
+      <BookCover book={{ s3Url: coverUrl ?? null, title }} width={36} />
       <View style={styles.itemBody}>
         <View style={styles.itemLine}>
           <Text style={[type.subheadline, styles.itemTitle]} numberOfLines={1}>

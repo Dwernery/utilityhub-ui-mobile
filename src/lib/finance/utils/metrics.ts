@@ -1,4 +1,5 @@
 import type { MonthChange, NetWorthEntry } from '../types';
+import { byDate, isoMonth, isoYear } from '../../dates';
 
 type History = NetWorthEntry[] | null | undefined;
 
@@ -22,27 +23,24 @@ export const MONTH_LABELS = [
   'December',
 ] as const;
 
-const entryYear = (entry: NetWorthEntry | undefined) => parseInt((entry?.date || '').split('-')[0]);
-const entryMonth = (entry: NetWorthEntry | undefined) => parseInt((entry?.date || '').split('-')[1]);
-const byDateAsc = (a: NetWorthEntry, b: NetWorthEntry) => new Date(a.date).getTime() - new Date(b.date).getTime();
 
 /** Exclude the in-progress current month. */
 const excludeCurrentMonth = (entries: NetWorthEntry[]) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1; // 1-indexed
-  return entries.filter((entry) => !(entryYear(entry) === currentYear && entryMonth(entry) === currentMonth));
+  return entries.filter((entry) => !(isoYear(entry.date) === currentYear && isoMonth(entry.date) === currentMonth));
 };
 
 export const getYears = (netWorthHistory: History): number[] => {
   if (!netWorthHistory || netWorthHistory.length === 0) return [];
-  return [...new Set(netWorthHistory.map(entryYear))].sort((a, b) => a - b);
+  return [...new Set(netWorthHistory.map((entry) => isoYear(entry.date)))].sort((a, b) => a - b);
 };
 
 export const getMonthlyChartData = (netWorthHistory: History, year: number) => {
   if (!netWorthHistory || netWorthHistory.length === 0) return [];
-  return excludeCurrentMonth(netWorthHistory.filter((entry) => entryYear(entry) === year)).map((entry) => ({
-    month: MONTH_LABELS[entryMonth(entry) - 1],
+  return excludeCurrentMonth(netWorthHistory.filter((entry) => isoYear(entry.date) === year)).map((entry) => ({
+    month: MONTH_LABELS[isoMonth(entry.date) - 1],
     netWorth: entry.netWorth,
   }));
 };
@@ -59,14 +57,15 @@ export const getYearMetrics = (netWorthHistory: History, selectedYear: number | 
   }
 
   // Last entry for the selected year, excluding current month
-  const yearEntries = excludeCurrentMonth(netWorthHistory.filter((entry) => entryYear(entry) === selectedYear)).sort(
-    byDateAsc,
+  const yearEntries = excludeCurrentMonth(netWorthHistory.filter((entry) => isoYear(entry.date) === selectedYear)).sort(
+    byDate,
   );
   const lastYearEntry = yearEntries[yearEntries.length - 1];
 
   // Last entry from previous year for YoY comparison
-  const prevYearEntries = netWorthHistory.filter((entry) => entryYear(entry) === selectedYear - 1);
-  const lastPrevYearEntry = prevYearEntries[prevYearEntries.length - 1];
+  // Sort first: "last" must mean the latest date, not whatever happened to come last in the array.
+  const prevYearEntries = netWorthHistory.filter((entry) => isoYear(entry.date) === selectedYear - 1).sort(byDate);
+  const lastPrevYearEntry = prevYearEntries.at(-1);
 
   const currentNetWorth = lastYearEntry?.netWorth || 0;
 
@@ -97,14 +96,14 @@ export const getYearStats = (netWorthHistory: History, selectedYear: number | nu
   const empty: YearStats = { bestMonth: null, worstMonth: null, avgChange: 0, avgChangePercent: 0, highest: 0, lowest: 0 };
   if (!netWorthHistory || !selectedYear) return empty;
 
-  const entries = excludeCurrentMonth(netWorthHistory.filter((entry) => entryYear(entry) === selectedYear)).sort(
-    byDateAsc,
+  const entries = excludeCurrentMonth(netWorthHistory.filter((entry) => isoYear(entry.date) === selectedYear)).sort(
+    byDate,
   );
   if (entries.length === 0) return empty;
 
   // Monthly changes; January compares against the prior year's ending balance
   const monthlyChanges: MonthChange[] = entries.map((entry, idx) => {
-    const monthIndex = entryMonth(entry) - 1;
+    const monthIndex = isoMonth(entry.date) - 1;
     let prevNetWorth = 0;
 
     if (idx > 0) {
@@ -114,8 +113,8 @@ export const getYearStats = (netWorthHistory: History, selectedYear: number | nu
         prevNetWorth = PRIOR_YEAR_ENDING_BALANCES[selectedYear];
       } else {
         const prevYearEntries = netWorthHistory
-          .filter((e) => entryYear(e) === selectedYear - 1)
-          .sort((a, b) => byDateAsc(b, a));
+          .filter((e) => isoYear(e.date) === selectedYear - 1)
+          .sort((a, b) => byDate(b, a));
         if (prevYearEntries.length > 0) prevNetWorth = prevYearEntries[0].netWorth || 0;
       }
     }

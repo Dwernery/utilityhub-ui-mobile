@@ -9,7 +9,7 @@ import { BarChart, describeSeries } from '@/components/ui/charts';
 import { accents, colors, radius, spacing, tabularNums, type } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
 import type { Book } from '@/lib/library/types';
-import { formatDate } from '@/lib/library/utils/dateUtils';
+import { formatDate } from '@/lib/dates';
 import type { LibraryMetrics, YearComparison } from '@/lib/library/utils/metricUtils';
 import { finishedInYear, GRAPH_METRICS, MONTH_SHORT, signed, type GraphMetric } from '@/lib/library/utils/yearDetails';
 
