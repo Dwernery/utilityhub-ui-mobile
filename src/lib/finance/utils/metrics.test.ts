@@ -31,6 +31,12 @@ describe('getYears', () => {
 });
 
 describe('getMonthlyChartData', () => {
+  it('plots months in date order even when the history is not', () => {
+    const shuffled = [entry('2025-03-01', 1300), entry('2025-01-01', 1100), entry('2025-02-01', 1000)];
+
+    expect(getMonthlyChartData(shuffled, 2025).map((p) => p.month)).toEqual(['January', 'February', 'March']);
+  });
+
   it('excludes the in-progress current month', () => {
     expect(getMonthlyChartData(history, 2026)).toEqual([{ month: 'October', netWorth: 2000 }]);
   });

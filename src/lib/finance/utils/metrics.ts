@@ -39,7 +39,10 @@ export const getYears = (netWorthHistory: History): number[] => {
 
 export const getMonthlyChartData = (netWorthHistory: History, year: number) => {
   if (!netWorthHistory || netWorthHistory.length === 0) return [];
-  return excludeCurrentMonth(netWorthHistory.filter((entry) => isoYear(entry.date) === year)).map((entry) => ({
+  // Sorted so the line runs Jan → Dec whatever order the API sends.
+  return excludeCurrentMonth(netWorthHistory.filter((entry) => isoYear(entry.date) === year))
+    .sort(byDate)
+    .map((entry) => ({
     month: MONTH_LABELS[isoMonth(entry.date) - 1],
     netWorth: entry.netWorth,
   }));
