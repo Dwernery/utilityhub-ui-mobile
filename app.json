@@ -40,7 +40,8 @@
             "backgroundColor": "#0b1426"
           }
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

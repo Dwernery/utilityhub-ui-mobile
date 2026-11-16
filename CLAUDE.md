@@ -8,7 +8,7 @@ A personal iOS app (Library, MCU tracker, Finances) migrated from the `utility-h
 
 - **iOS only, fully native.** No Android code paths, no web or DOM components. Use iOS idioms: SF Symbols (`expo-symbols`), `@expo/ui` (SwiftUI) controls, native tabs with liquid glass, form sheets.
 - **Target:** iOS 27 on iPhone, including the foldable **iPhone Duo** (cover screen about 466 pt wide with an 84 pt right safe-area inset, unfolded 670–950 pt), and iPad.
-- **Backend:** the existing REST API, reached through `EXPO_PUBLIC_API_URL` (`.env` for development, `.env.production` for release builds). It has **no auth**. Never commit env files or the server address, because the repo is public.
+- **Backend:** the existing REST API, reached through `EXPO_PUBLIC_API_URL` (`.env` for development, `.env.production` for release builds). Every request needs the access token (`Authorization: Bearer …`): `src/lib/apiToken.ts` keeps it in the Keychain (`expo-secure-store`), `src/lib/http.ts` sends it and treats a 401 as "unlock again", and `components/auth/token-gate.tsx` shows the unlock screen instead of the tabs while there is none. Release builds use HTTPS. Never commit env files, the server address or a token, because the repo is public.
 - **Before declaring a task done,** run `npx tsc --noEmit && npx expo lint`. The user does the hands-on simulator testing and reports back, so don't drive the simulator with tap automation. A screenshot (`xcrun simctl io <udid> screenshot`) to sanity-check is fine. When you hand off, list what to test.
 - **Git:** one feature branch per change, then fast-forward into `main`. Pushing needs `git -c http.postBuffer=524288000 push`, because the default buffer causes HTTP 400.
 

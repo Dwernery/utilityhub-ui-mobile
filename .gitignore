@@ -42,6 +42,6 @@ example
 /ios
 /android
 
-# Environment: API URLs stay local (the API has no auth). Copy .env.example to .env / .env.production.
+# Environment: API URLs stay local (the repo is public). Copy .env.example to .env / .env.production.
 .env
 .env.production
