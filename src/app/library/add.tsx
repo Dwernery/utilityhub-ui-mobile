@@ -12,7 +12,6 @@ const EMPTY: BookDraft = {
   authorName: '',
   seriesName: '',
   pages: '',
-  isbn13: '',
   status: 'UNREAD',
   startDate: null,
   endDate: null,
@@ -40,7 +39,6 @@ export default function AddBook() {
         authorName: draft.authorName.trim(),
         seriesName: draft.seriesName.trim(),
         pages: draft.pages,
-        isbn13: draft.isbn13.trim(),
       });
 
       if (file && created?.id) {

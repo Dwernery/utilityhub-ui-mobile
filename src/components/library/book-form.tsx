@@ -20,7 +20,6 @@ export interface BookDraft {
   authorName: string;
   seriesName: string;
   pages: string;
-  isbn13: string;
   status: BookStatus;
   startDate: string | null;
   endDate: string | null;
@@ -139,15 +138,6 @@ export function BookForm({ mode, draft, setDraft, busy, file, setFile, isUploadi
             value={draft.pages}
             onChangeText={(t) => set('pages', t.replace(/[^0-9]/g, ''))}
             placeholder="0"
-            keyboardType="number-pad"
-            editable={!busy}
-          />
-          <FormTextField
-            label="ISBN"
-            required
-            value={draft.isbn13}
-            onChangeText={(t) => set('isbn13', t)}
-            placeholder="978…"
             keyboardType="number-pad"
             editable={!busy}
           />

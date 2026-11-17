@@ -16,7 +16,6 @@ export interface Book {
   endDate: string | null;
   /** 1–5 */
   rating: number | null;
-  isbn13: string | null;
   /** Cover image URL */
   s3Url: string | null;
 }
@@ -36,7 +35,6 @@ export interface NewBookInput {
   pages?: number | string | null;
   authorName: string;
   seriesName?: string | null;
-  isbn13?: string | null;
 }
 
 /** PATCH payload — only defined fields are sent. */
@@ -50,7 +48,6 @@ export type BookUpdate = { id: number } & Partial<{
   startDate: string | null;
   endDate: string | null;
   rating: number | string | null;
-  isbn13: string | null;
 }>;
 
 export interface PresignedUpload {

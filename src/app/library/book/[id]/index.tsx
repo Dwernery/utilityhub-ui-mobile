@@ -145,12 +145,6 @@ export default function BookDetail() {
           />
         </View>
 
-        {book.isbn13 ? (
-          <Text style={[type.footnote, styles.isbn]} selectable>
-            ISBN {book.isbn13}
-          </Text>
-        ) : null}
-
         <Pressable
           onPress={onDelete}
           disabled={deleteBook.isPending}
@@ -178,7 +172,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     backgroundColor: colors.secondaryGroupedBackground,
   },
-  isbn: { color: colors.secondaryLabel, textAlign: 'center' },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
