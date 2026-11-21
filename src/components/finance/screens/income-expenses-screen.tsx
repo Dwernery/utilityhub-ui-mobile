@@ -1,4 +1,3 @@
-import { SegmentedControl } from '@expo/ui/community/segmented-control';
 import { router, Stack } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
@@ -13,7 +12,7 @@ import { useIsWide } from '@/hooks/use-is-wide';
 import { useClearAllPaid, useTransactions, useUpdateTransaction } from '@/lib/finance/hooks';
 import type { Transaction, TransactionType } from '@/lib/finance/types';
 import { Currencyformatter } from '@/lib/finance/utils/currency';
-import { Skeleton, SkeletonListGroup, SkeletonTiles } from '@/components/ui/skeleton';
+import { SkeletonListGroup, SkeletonTiles } from '@/components/ui/skeleton';
 import { transactionTotals } from '@/lib/finance/utils/monthly';
 
 const fmt = (n: number) => Currencyformatter.format(n);
@@ -88,6 +87,12 @@ export default function IncomeExpenses() {
     );
   };
 
+  const changeFilter = (next: PaidFilter) => {
+    if (next === filter) return;
+    haptics.selection();
+    setFilter(next);
+  };
+
   const confirmClear = () =>
     Alert.alert('Clear paid status from all income and expense transactions?', undefined, [
       { text: 'Cancel', style: 'cancel' },
@@ -105,6 +110,17 @@ export default function IncomeExpenses() {
   return (
     <>
       <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Menu
+          icon={filter === 'ALL' ? 'line.3.horizontal.decrease.circle' : 'line.3.horizontal.decrease.circle.fill'}
+          accessibilityLabel={`Filter, ${FILTERS.find((f) => f.key === filter)?.label}`}>
+          <Stack.Toolbar.Menu inline title="Show">
+            {FILTERS.map((f) => (
+              <Stack.Toolbar.MenuAction key={f.key} isOn={filter === f.key} onPress={() => changeFilter(f.key)}>
+                {f.label}
+              </Stack.Toolbar.MenuAction>
+            ))}
+          </Stack.Toolbar.Menu>
+        </Stack.Toolbar.Menu>
         <Stack.Toolbar.Menu icon="ellipsis.circle" accessibilityLabel="More">
           <Stack.Toolbar.MenuAction icon="xmark.circle" destructive onPress={confirmClear}>
             Clear All Paid
@@ -119,7 +135,6 @@ export default function IncomeExpenses() {
         {isPending ? (
           <View style={styles.stack} accessibilityLabel="Loading" accessibilityRole="progressbar">
             <SkeletonTiles count={4} perRow={wide ? 4 : 2} />
-            <Skeleton height={32} r={9} />
             <View style={wide ? styles.columns : styles.stack}>
               <View style={wide ? styles.flex : undefined}>
                 <SkeletonListGroup rows={4} cover={false} />
@@ -150,19 +165,6 @@ export default function IncomeExpenses() {
                 <Tile label="Net Income" value={totals.netIncome} color={positive ? financeSurfaces.tile.positive : financeSurfaces.tile.negative} />
               </View>
             </View>
-
-            <SegmentedControl
-              values={FILTERS.map((f) => f.label)}
-              selectedIndex={FILTERS.findIndex((f) => f.key === filter)}
-              onChange={(e) => {
-                const next = FILTERS[e.nativeEvent.selectedSegmentIndex]?.key;
-                if (next && next !== filter) {
-                  haptics.selection();
-                  setFilter(next);
-                }
-              }}
-              accessibilityLabel="Paid filter"
-            />
 
             {/* Wide: Income and Expenses side by side, as on the web. */}
             <View style={wide ? styles.columns : styles.stack}>
