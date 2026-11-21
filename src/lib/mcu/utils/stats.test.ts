@@ -87,11 +87,11 @@ describe('getItemProgressFraction', () => {
 });
 
 describe('formatMinutes', () => {
-  it('uses minutes under an hour, hours and minutes under 10 h, whole hours past that', () => {
+  it('uses minutes under an hour, hours and minutes under 10h, whole hours past that', () => {
     expect(formatMinutes(45)).toBe('45 min');
-    expect(formatMinutes(120)).toBe('2 h');
-    expect(formatMinutes(150)).toBe('2 h 30 min');
-    expect(formatMinutes(4870)).toBe('81 h');
+    expect(formatMinutes(120)).toBe('2h');
+    expect(formatMinutes(150)).toBe('2h 30 min');
+    expect(formatMinutes(4870)).toBe('81h');
   });
 });
 

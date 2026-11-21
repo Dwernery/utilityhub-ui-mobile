@@ -121,13 +121,13 @@ export function combineStats(statsList: WatchStats[]): WatchStats {
   );
 }
 
-/** "45 min", "12 h", "1 h 30 min" under 10 h, whole hours past that. */
+/** "45 min", "12h", "1h 30 min" under 10h, whole hours past that. */
 export function formatMinutes(minutes: number): string {
   if (minutes < 60) return `${Math.round(minutes)} min`;
   const h = Math.floor(minutes / 60);
   const m = Math.round(minutes % 60);
-  if (h >= 10 || m === 0) return `${Math.round(minutes / 60)} h`;
-  return `${h} h ${m} min`;
+  if (h >= 10 || m === 0) return `${Math.round(minutes / 60)}h`;
+  return `${h}h ${m} min`;
 }
 
 export function percentage(done: number, total: number): number {
