@@ -41,6 +41,7 @@ A personal iOS app (Library, MCU tracker, Finances) migrated from the `utility-h
 npx expo start                                       # Metro for the installed dev build
 npx expo run:ios                                     # rebuild the dev client (after adding native modules or changing app.json)
 npx expo run:ios --device --configuration Release    # install on the iPhone
+npm run ios:device                                   # same, via xcodebuild; renews the 7-day free-team profile (runs Sundays 10:00 from launchd)
 npx tsc --noEmit && npx expo lint && npx expo-doctor # checks
 ```
 
