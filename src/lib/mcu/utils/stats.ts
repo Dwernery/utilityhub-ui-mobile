@@ -121,13 +121,9 @@ export function combineStats(statsList: WatchStats[]): WatchStats {
   );
 }
 
-/** "45 min", "12h", "1h 30 min" under 10h, whole hours past that. */
+/** Whole hours ("143h"); minutes only for the last stretch under an hour ("45 min to go"). */
 export function formatMinutes(minutes: number): string {
-  if (minutes < 60) return `${Math.round(minutes)} min`;
-  const h = Math.floor(minutes / 60);
-  const m = Math.round(minutes % 60);
-  if (h >= 10 || m === 0) return `${Math.round(minutes / 60)}h`;
-  return `${h}h ${m} min`;
+  return minutes < 60 ? `${Math.round(minutes)} min` : `${Math.round(minutes / 60)}h`;
 }
 
 export function percentage(done: number, total: number): number {
