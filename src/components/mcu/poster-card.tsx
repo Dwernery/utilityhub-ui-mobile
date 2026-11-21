@@ -19,6 +19,7 @@ import {
 export const POSTER_WIDTH = 112;
 const POSTER_HEIGHT = POSTER_WIDTH * 1.5;
 const BADGE = 24;
+const BADGE_BORDER = 1.5;
 
 interface PosterCardProps {
   item: McuItem;
@@ -110,7 +111,8 @@ function StatusBadge({ complete, partial, fraction, color }: { complete: boolean
   return (
     <View style={[styles.badge, styles.badgeEmpty]}>
       {partial && (
-        <Svg width={BADGE} height={BADGE} style={[StyleSheet.absoluteFill, { transform: [{ rotate: '-90deg' }] }]}>
+        // Absolute children sit inside the border, so pull the SVG back out to line up with the outer edge.
+        <Svg width={BADGE} height={BADGE} style={styles.ring}>
           <Circle
             cx={BADGE / 2}
             cy={BADGE / 2}
@@ -271,9 +273,10 @@ const styles = StyleSheet.create({
     width: BADGE,
     height: BADGE,
     borderRadius: BADGE / 2,
-    borderWidth: 1.5,
+    borderWidth: BADGE_BORDER,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  ring: { position: 'absolute', top: -BADGE_BORDER, left: -BADGE_BORDER, transform: [{ rotate: '-90deg' }] },
   badgeEmpty: { borderColor: 'rgba(255,255,255,0.75)', backgroundColor: 'rgba(2,6,23,0.4)' },
 });
