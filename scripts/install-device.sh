@@ -2,7 +2,7 @@
 # Builds the Release app and installs it on the iPhone (USB or Wi-Fi) with a
 # freshly generated provisioning profile. A free Apple ID team's profile expires
 # after 7 days, so a launchd agent (com.dwernery.projectshield-install) runs
-# ~/Library/Scripts/projectshield-check.sh every 6 hours; when the installed
+# ~/Library/Scripts/projectshield-check.sh daily at 7 pm; when the installed
 # profile has under 3 days left it opens projectshield-install.command in
 # Terminal (Terminal, because background jobs cannot read ~/Documents).
 #
