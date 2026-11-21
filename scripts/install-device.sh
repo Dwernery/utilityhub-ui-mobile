@@ -1,7 +1,8 @@
 #!/bin/zsh
 # Builds the Release app and installs it on the iPhone (USB or Wi-Fi), letting
 # Xcode renew the provisioning profile on the way. A free Apple ID team's
-# profile expires after 7 days, so this runs weekly from launchd
+# profile expires after 7 days, so launchd opens ~/Library/Scripts/projectshield-install.command
+# in Terminal every Sunday (Terminal, because background jobs cannot read ~/Documents)
 # (~/Library/LaunchAgents/com.dwernery.projectshield-install.plist).
 #
 #   ./scripts/install-device.sh                 # first paired iPhone, one attempt
