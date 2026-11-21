@@ -1,5 +1,5 @@
 import type { McuItem, WatchedMap } from '../types';
-import { computeStats, isItemComplete, isItemPartial, nextStatus, percentage } from './stats';
+import { computeStats, formatMinutes, getItemProgressFraction, isItemComplete, isItemPartial, nextStatus, percentage } from './stats';
 
 const movie = { id: 'movie:1', globalId: 'movie:1', type: 'movie', title: 'M' } as McuItem;
 const special = { id: 'movie:2', globalId: 'movie:2', type: 'special', title: 'S' } as McuItem;
@@ -53,7 +53,46 @@ describe('computeStats', () => {
       specialsDone: 0,
       episodes: 2,
       episodesDone: 1,
+      // No runtimes here, so the per-type estimates apply: 135 + 50 + 2 × 45.
+      minutes: 275,
+      minutesDone: 180, // the movie + episode 2
     });
+  });
+
+  it('weights time watched by real runtimes, and in-progress movies count as 0', () => {
+    const long = { ...movie, runtime: 180 } as McuItem;
+    const short = {
+      ...season,
+      episodes: [
+        { globalId: 'episode:1', title: 'E1', episodeNumber: 1, runtime: 30 },
+        { globalId: 'episode:2', title: 'E2', episodeNumber: 2, runtime: 30 },
+      ],
+    } as McuItem;
+    const stats = computeStats([long, short], { 'movie:1': 'IN_PROGRESS', 'episode:1': 'WATCHED', 'episode:2': 'WATCHED' });
+    expect(stats.minutes).toBe(240);
+    expect(stats.minutesDone).toBe(60);
+  });
+});
+
+describe('getItemProgressFraction', () => {
+  it('fills a show’s ring by runtime, not episode count', () => {
+    const uneven = {
+      ...season,
+      episodes: [
+        { globalId: 'episode:1', title: 'E1', episodeNumber: 1, runtime: 30 },
+        { globalId: 'episode:2', title: 'E2', episodeNumber: 2, runtime: 90 },
+      ],
+    } as McuItem;
+    expect(getItemProgressFraction(uneven, { 'episode:1': 'WATCHED' })).toBe(0.25);
+  });
+});
+
+describe('formatMinutes', () => {
+  it('uses minutes under an hour, hours and minutes under 10 h, whole hours past that', () => {
+    expect(formatMinutes(45)).toBe('45 min');
+    expect(formatMinutes(120)).toBe('2 h');
+    expect(formatMinutes(150)).toBe('2 h 30 min');
+    expect(formatMinutes(4870)).toBe('81 h');
   });
 });
 

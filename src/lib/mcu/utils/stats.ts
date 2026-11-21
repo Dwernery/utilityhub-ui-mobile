@@ -32,12 +32,29 @@ export function isItemPartial(item: McuItem, watched: WatchedMap): boolean {
   return getStatus(watched, item.id) === 'IN_PROGRESS';
 }
 
-/** Progress fraction (0–1) for the poster progress ring. */
+/** Stand-ins for the odd title without a runtime, so it still counts toward time watched. */
+const FALLBACK_MINUTES = { movie: 135, special: 50, episode: 45 } as const;
+
+export function runtimeOf(item: McuItem): number {
+  return item.type === 'tv' ? 0 : item.runtime || FALLBACK_MINUTES[item.type];
+}
+
+export function episodeRuntime(runtime: number | null | undefined): number {
+  return runtime || FALLBACK_MINUTES.episode;
+}
+
+/** Progress fraction (0–1) for the poster progress ring: share of a show's runtime watched. */
 export function getItemProgressFraction(item: McuItem, watched: WatchedMap): number {
   if (item.type !== 'tv') return 0.5;
   if (!item.episodes?.length) return 0;
-  const watchedCount = item.episodes.filter((episode) => getStatus(watched, episode.globalId) === 'WATCHED').length;
-  return watchedCount / item.episodes.length;
+  let total = 0;
+  let done = 0;
+  for (const episode of item.episodes) {
+    const minutes = episodeRuntime(episode.runtime);
+    total += minutes;
+    if (getStatus(watched, episode.globalId) === 'WATCHED') done += minutes;
+  }
+  return done / total;
 }
 
 export function unitCount(item: McuItem): number {
@@ -53,6 +70,8 @@ const EMPTY_STATS: WatchStats = {
   episodesDone: 0,
   specials: 0,
   specialsDone: 0,
+  minutes: 0,
+  minutesDone: 0,
 };
 
 export function computeStats(items: McuItem[], watched: WatchedMap): WatchStats {
@@ -64,18 +83,28 @@ export function computeStats(items: McuItem[], watched: WatchedMap): WatchStats 
     if (item.type === 'tv') {
       stats.episodes += item.episodes.length;
       for (const episode of item.episodes) {
+        const minutes = episodeRuntime(episode.runtime);
+        stats.minutes += minutes;
         if (getStatus(watched, episode.globalId) === 'WATCHED') {
           stats.episodesDone++;
           stats.done++;
+          stats.minutesDone += minutes;
         }
       }
-    } else if (item.type === 'movie') {
+    } else {
+      const minutes = runtimeOf(item);
+      stats.minutes += minutes;
+      // In-progress movies count as 0: the API has no playback position.
+      if (getStatus(watched, item.id) === 'WATCHED') stats.minutesDone += minutes;
+    }
+
+    if (item.type === 'movie') {
       stats.movies++;
       if (getStatus(watched, item.id) === 'WATCHED') {
         stats.moviesDone++;
         stats.done++;
       }
-    } else {
+    } else if (item.type === 'special') {
       stats.specials++;
       if (getStatus(watched, item.id) === 'WATCHED') {
         stats.specialsDone++;
@@ -96,6 +125,15 @@ export function combineStats(statsList: WatchStats[]): WatchStats {
     },
     { ...EMPTY_STATS },
   );
+}
+
+/** "45 min", "12 h", "1 h 30 min" under 10 h, whole hours past that. */
+export function formatMinutes(minutes: number): string {
+  if (minutes < 60) return `${Math.round(minutes)} min`;
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h >= 10 || m === 0) return `${Math.round(minutes / 60)} h`;
+  return `${h} h ${m} min`;
 }
 
 export function percentage(done: number, total: number): number {

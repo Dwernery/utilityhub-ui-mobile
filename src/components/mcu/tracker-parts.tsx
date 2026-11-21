@@ -9,7 +9,7 @@ import { haptics } from '@/lib/haptics';
 import type { McuItem, WatchedMap, WatchStats } from '@/lib/mcu/types';
 import { BREAKDOWN, VIEWS, type TrackerView } from '@/lib/mcu/utils/constants';
 import type { PhaseCard, TrackerSection } from '@/lib/mcu/utils/sections';
-import { percentage } from '@/lib/mcu/utils/stats';
+import { formatMinutes, percentage } from '@/lib/mcu/utils/stats';
 
 import { PosterCard } from './poster-card';
 
@@ -21,7 +21,9 @@ export function TrackerOverview({ view, onChangeView, stats }: {
   onChangeView: (v: TrackerView) => void;
   stats: WatchStats;
 }) {
-  const pct = percentage(stats.done, stats.total);
+  // Weighted by runtime, so a 3-hour movie moves the bar more than a 30-minute episode.
+  const pct = percentage(stats.minutesDone, stats.minutes);
+  const left = stats.minutes - stats.minutesDone;
   return (
     <View style={styles.overview}>
       <SegmentedControl
@@ -37,12 +39,21 @@ export function TrackerOverview({ view, onChangeView, stats }: {
         }}
         accessibilityLabel="Tracker view"
       />
-      <View style={styles.panel} accessible accessibilityLabel={`Overall ${pct} percent watched`}>
+      <View
+        style={styles.panel}
+        accessible
+        accessibilityLabel={`Overall ${pct} percent watched, ${formatMinutes(stats.minutesDone)} of ${formatMinutes(stats.minutes)}`}>
         <View style={styles.rowBetween}>
           <Text style={[type.footnote, styles.muted]}>Overall</Text>
           <Text style={[type.headline, tabularNums, styles.light]}>{pct}%</Text>
         </View>
         <ProgressBar value={pct / 100} tint="#ef4444" trackColor={MCU_BORDER} height={6} />
+        <View style={styles.rowBetween}>
+          <Text style={[type.caption1, tabularNums, styles.muted]}>
+            {formatMinutes(stats.minutesDone)} of {formatMinutes(stats.minutes)}
+          </Text>
+          <Text style={[type.caption1, tabularNums, styles.muted]}>{left > 0 ? `${formatMinutes(left)} to go` : 'All caught up'}</Text>
+        </View>
       </View>
       <View style={styles.breakdown}>
         {BREAKDOWN.map(({ key, doneKey, label, icon }) => (
@@ -143,7 +154,7 @@ export function SagaSectionView({ section, expanded, onToggle, watched, onToggle
   onSelectItem: (item: McuItem) => void;
 }) {
   const open = !!expanded[section.key];
-  const pct = percentage(section.stats.done, section.stats.total);
+  const pct = percentage(section.stats.minutesDone, section.stats.minutes);
   const { color } = section;
   const row = { watched, onToggleItem, onSelectItem };
 

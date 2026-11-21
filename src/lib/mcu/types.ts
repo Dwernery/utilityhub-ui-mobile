@@ -113,4 +113,7 @@ export interface WatchStats {
   episodesDone: number;
   specials: number;
   specialsDone: number;
+  /** Runtime of everything counted, in minutes (missing runtimes use a per-type estimate). */
+  minutes: number;
+  minutesDone: number;
 }
