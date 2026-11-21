@@ -1,9 +1,10 @@
 #!/bin/zsh
-# Builds the Release app and installs it on the iPhone (USB or Wi-Fi), letting
-# Xcode renew the provisioning profile on the way. A free Apple ID team's
-# profile expires after 7 days, so launchd opens ~/Library/Scripts/projectshield-install.command
-# in Terminal every Sunday (Terminal, because background jobs cannot read ~/Documents)
-# (~/Library/LaunchAgents/com.dwernery.projectshield-install.plist).
+# Builds the Release app and installs it on the iPhone (USB or Wi-Fi) with a
+# freshly generated provisioning profile. A free Apple ID team's profile expires
+# after 7 days, so a launchd agent (com.dwernery.projectshield-install) runs
+# ~/Library/Scripts/projectshield-check.sh every 6 hours; when the installed
+# profile has under 3 days left it opens projectshield-install.command in
+# Terminal (Terminal, because background jobs cannot read ~/Documents).
 #
 #   ./scripts/install-device.sh                 # first paired iPhone, one attempt
 #   DEVICE_ID=<udid> ./scripts/install-device.sh
@@ -15,6 +16,38 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH" # launchd sta
 
 ATTEMPTS=${ATTEMPTS:-1}
 RETRY_DELAY=${RETRY_DELAY:-600}
+BUNDLE_ID=com.dwernery.projectshield
+PROFILES_DIR="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+# Read by ~/Library/Scripts/projectshield-check.sh to decide when to renew.
+EXPIRY_FILE="$HOME/Library/Application Support/ProjectSHIELD/profile-expiry"
+
+# Prints the paths of this app's cached provisioning profiles.
+app_profiles() {
+  local f
+  for f in "$PROFILES_DIR"/*.mobileprovision(N); do
+    security cms -D -i "$f" 2>/dev/null \
+      | plutil -extract Entitlements.application-identifier raw - 2>/dev/null \
+      | grep -q "\.$BUNDLE_ID\$" && print -r -- "$f"
+  done
+}
+
+# Xcode reuses a cached profile until it expires; removing it makes the build
+# request a new one, so every install gets the full 7 days.
+drop_cached_profiles() {
+  app_profiles | while IFS= read -r f; do rm -f "$f"; done
+}
+
+record_expiry() {
+  local f expiry=""
+  for f in "${(@f)$(app_profiles)}"; do
+    [[ -n "$f" ]] || continue
+    expiry=$(security cms -D -i "$f" | plutil -extract ExpirationDate raw -)
+  done
+  [[ -n "$expiry" ]] || return 0
+  mkdir -p "${EXPIRY_FILE:h}"
+  print -r -- "$expiry" > "$EXPIRY_FILE"
+  echo "Profile valid until $expiry"
+}
 
 notify() {
   osascript -e "display notification \"$1\" with title \"Project SHIELD\"" 2>/dev/null || true
@@ -58,11 +91,13 @@ attempt() {
     ios/build/Build/Products/Release-iphoneos/ProjectSHIELD.app || return 1
 
   echo "Installed ProjectSHIELD on $device"
+  record_expiry
 }
 
+drop_cached_profiles
 for i in $(seq 1 "$ATTEMPTS"); do
   if attempt; then
-    notify "Reinstalled on your iPhone; signing renewed for another week."
+    notify "Reinstalled on your iPhone; signing renewed for 7 days."
     exit 0
   fi
   if (( i < ATTEMPTS )); then
