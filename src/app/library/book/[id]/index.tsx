@@ -1,5 +1,4 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -92,12 +91,16 @@ export default function BookDetail() {
       <Stack.Screen options={{ title: 'Book Details' }} />
       <SheetCloseButton />
       <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          icon="pencil"
-          accessibilityLabel="Edit book"
-          disabled={deleteBook.isPending}
-          onPress={() => router.push({ pathname: '/library/book/[id]/edit', params: { id: String(book.id) } })}
-        />
+        <Stack.Toolbar.Menu icon="pencil" accessibilityLabel="Edit or delete book" disabled={deleteBook.isPending}>
+          <Stack.Toolbar.MenuAction
+            icon="pencil"
+            onPress={() => router.push({ pathname: '/library/book/[id]/edit', params: { id: String(book.id) } })}>
+            Edit
+          </Stack.Toolbar.MenuAction>
+          <Stack.Toolbar.MenuAction icon="trash" destructive onPress={onDelete}>
+            Delete
+          </Stack.Toolbar.MenuAction>
+        </Stack.Toolbar.Menu>
       </Stack.Toolbar>
 
       <ScreenScrollView sideInsets={false} contentContainerStyle={styles.content}>
@@ -144,17 +147,6 @@ export default function BookDetail() {
             ]}
           />
         </View>
-
-        <Pressable
-          onPress={onDelete}
-          disabled={deleteBook.isPending}
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.deleteButton, pressed && { opacity: 0.7 }, deleteBook.isPending && { opacity: 0.5 }]}>
-          <SymbolView name="trash" size={16} tintColor={colors.negative} />
-          <Text style={[type.body, { color: colors.negative, fontWeight: '600' }]}>
-            {deleteBook.isPending ? 'Deleting…' : 'Delete Book'}
-          </Text>
-        </Pressable>
       </ScreenScrollView>
     </>
   );
@@ -168,16 +160,6 @@ const styles = StyleSheet.create({
   ratingRow: { gap: spacing.xs },
   stats: {
     paddingVertical: spacing.lg,
-    borderRadius: radius.lg,
-    borderCurve: 'continuous',
-    backgroundColor: colors.secondaryGroupedBackground,
-  },
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    minHeight: 50,
     borderRadius: radius.lg,
     borderCurve: 'continuous',
     backgroundColor: colors.secondaryGroupedBackground,

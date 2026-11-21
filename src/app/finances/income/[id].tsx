@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeyboardInset } from '@/hooks/use-keyboard-inset';
 
-import { FormButtonRow, FormSection, FormTextField } from '@/components/ui/form';
+import { FormSection, FormTextField } from '@/components/ui/form';
 import { FormSheetToolbar } from '@/components/ui/form-sheet-toolbar';
 import { accents, colors, spacing } from '@/constants/theme';
 import { useToast } from '@/context/toast';
@@ -72,7 +72,14 @@ function Form({ id, year, initialName, initialAmount }: { id?: number; year: num
   return (
     <>
       <Stack.Screen options={{ title: id ? 'Edit Income' : `Add Income · ${year}` }} />
-      <FormSheetToolbar dirty={dirty} busy={busy} onSave={onSave} tint={accents.finances} />
+      <FormSheetToolbar
+        dirty={dirty}
+        busy={busy}
+        onSave={onSave}
+        tint={accents.finances}
+        onDelete={id ? onDelete : undefined}
+        deleteLabel="Delete income source"
+      />
       <ScrollView
         style={styles.flex}
         contentInsetAdjustmentBehavior="automatic"
@@ -84,11 +91,6 @@ function Form({ id, year, initialName, initialAmount }: { id?: number; year: num
           <FormTextField label="Source" value={name} onChangeText={setName} placeholder="e.g. Salary" editable={!busy} />
           <FormTextField label="Amount" value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" editable={!busy} />
         </FormSection>
-        {id && (
-          <FormSection>
-            <FormButtonRow title="Delete Income Source" destructive onPress={onDelete} disabled={busy} />
-          </FormSection>
-        )}
       </ScrollView>
     </>
   );
