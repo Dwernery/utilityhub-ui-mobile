@@ -32,15 +32,9 @@ export function isItemPartial(item: McuItem, watched: WatchedMap): boolean {
   return getStatus(watched, item.id) === 'IN_PROGRESS';
 }
 
-/** Stand-ins for the odd title without a runtime, so it still counts toward time watched. */
-const FALLBACK_MINUTES = { movie: 135, special: 50, episode: 45 } as const;
-
-export function runtimeOf(item: McuItem): number {
-  return item.type === 'tv' ? 0 : item.runtime || FALLBACK_MINUTES[item.type];
-}
-
-export function episodeRuntime(runtime: number | null | undefined): number {
-  return runtime || FALLBACK_MINUTES.episode;
+/** Runtime in minutes; every production title has one, so a missing value just counts as 0. */
+function minutesOf(runtime: number | null | undefined): number {
+  return runtime ?? 0;
 }
 
 /** Progress fraction (0–1) for the poster progress ring: share of a show's runtime watched. */
@@ -50,11 +44,11 @@ export function getItemProgressFraction(item: McuItem, watched: WatchedMap): num
   let total = 0;
   let done = 0;
   for (const episode of item.episodes) {
-    const minutes = episodeRuntime(episode.runtime);
+    const minutes = minutesOf(episode.runtime);
     total += minutes;
     if (getStatus(watched, episode.globalId) === 'WATCHED') done += minutes;
   }
-  return done / total;
+  return total > 0 ? done / total : 0;
 }
 
 export function unitCount(item: McuItem): number {
@@ -83,7 +77,7 @@ export function computeStats(items: McuItem[], watched: WatchedMap): WatchStats 
     if (item.type === 'tv') {
       stats.episodes += item.episodes.length;
       for (const episode of item.episodes) {
-        const minutes = episodeRuntime(episode.runtime);
+        const minutes = minutesOf(episode.runtime);
         stats.minutes += minutes;
         if (getStatus(watched, episode.globalId) === 'WATCHED') {
           stats.episodesDone++;
@@ -92,9 +86,9 @@ export function computeStats(items: McuItem[], watched: WatchedMap): WatchStats 
         }
       }
     } else {
-      const minutes = runtimeOf(item);
+      const minutes = minutesOf(item.runtime);
       stats.minutes += minutes;
-      // In-progress movies count as 0: the API has no playback position.
+      // Only finished titles count; in-progress ones add nothing until they're watched.
       if (getStatus(watched, item.id) === 'WATCHED') stats.minutesDone += minutes;
     }
 

@@ -53,9 +53,8 @@ describe('computeStats', () => {
       specialsDone: 0,
       episodes: 2,
       episodesDone: 1,
-      // No runtimes here, so the per-type estimates apply: 135 + 50 + 2 × 45.
-      minutes: 275,
-      minutesDone: 180, // the movie + episode 2
+      minutes: 0, // no runtimes in these fixtures
+      minutesDone: 0,
     });
   });
 
