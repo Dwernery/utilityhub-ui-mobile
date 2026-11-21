@@ -91,16 +91,19 @@ export default function BookDetail() {
       <Stack.Screen options={{ title: 'Book Details' }} />
       <SheetCloseButton />
       <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Menu icon="pencil" accessibilityLabel="Edit or delete book" disabled={deleteBook.isPending}>
-          <Stack.Toolbar.MenuAction
-            icon="pencil"
-            onPress={() => router.push({ pathname: '/library/book/[id]/edit', params: { id: String(book.id) } })}>
-            Edit
-          </Stack.Toolbar.MenuAction>
-          <Stack.Toolbar.MenuAction icon="trash" destructive onPress={onDelete}>
-            Delete
-          </Stack.Toolbar.MenuAction>
-        </Stack.Toolbar.Menu>
+        <Stack.Toolbar.Button
+          icon="pencil"
+          accessibilityLabel="Edit book"
+          disabled={deleteBook.isPending}
+          onPress={() => router.push({ pathname: '/library/book/[id]/edit', params: { id: String(book.id) } })}
+        />
+        <Stack.Toolbar.Button
+          icon="trash"
+          tintColor={colors.negative}
+          accessibilityLabel="Delete book"
+          disabled={deleteBook.isPending}
+          onPress={onDelete}
+        />
       </Stack.Toolbar>
 
       <ScreenScrollView sideInsets={false} contentContainerStyle={styles.content}>
