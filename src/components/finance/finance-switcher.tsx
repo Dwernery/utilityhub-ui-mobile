@@ -35,9 +35,13 @@ export function FinanceSwitcher({ current }: { current: FinanceSection }) {
   );
 }
 
-/** Year picker: a segmented control for up to 5 years, otherwise the most recent 5. */
+/**
+ * Year picker: a segmented control for up to 5 years, otherwise the most recent 5. An older
+ * selected year (picked from a chart, or added on History) takes the place of the oldest one shown.
+ */
 export function YearSegments({ years, selected, onSelect }: { years: number[]; selected: number | null; onSelect: (y: number) => void }) {
-  const shown = years.slice(-5);
+  const recent = years.slice(-5);
+  const shown = selected == null || recent.includes(selected) ? recent : [selected, ...recent.slice(1)];
   if (shown.length < 2) return null;
   return (
     <SegmentedControl

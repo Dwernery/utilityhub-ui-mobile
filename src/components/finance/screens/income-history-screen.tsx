@@ -1,15 +1,14 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
-import { FinanceSwitcher } from '@/components/finance/finance-switcher';
+import { FinanceSwitcher, YearSegments } from '@/components/finance/finance-switcher';
 import { Card } from '@/components/ui/card';
 import { BarChart, describeSeries, formatThousands } from '@/components/ui/charts';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { accents, colors, radius, spacing, tabularNums, type } from '@/constants/theme';
 import { useToast } from '@/context/toast';
-import { haptics } from '@/lib/haptics';
 import { useIsWide } from '@/hooks/use-is-wide';
 import { useIncomeSources } from '@/lib/finance/hooks';
 import { Currencyformatter } from '@/lib/finance/utils/currency';
@@ -59,143 +58,126 @@ export default function IncomeHistory() {
   const openSource = (id: string) => router.push({ pathname: '/finances/income/[id]', params: { id, year: String(year) } });
 
   return (
-    <ScreenScrollView
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />}>
-      <FinanceSwitcher current="History" />
+    <>
+      {!isPending && !isError && year != null && (
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Button icon="calendar.badge.plus" accessibilityLabel="Add year" onPress={addYear} />
+        </Stack.Toolbar>
+      )}
+      <ScreenScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />}>
+        <FinanceSwitcher current="History" />
 
-      {isPending ? (
-        <View style={styles.skeleton} accessibilityLabel="Loading" accessibilityRole="progressbar">
-          <View style={[styles.years, { flexDirection: 'row' }]}>
-            <Skeleton width={72} height={36} r={18} />
-            <Skeleton width={72} height={36} r={18} />
+        {isPending ? (
+          <View style={styles.skeleton} accessibilityLabel="Loading" accessibilityRole="progressbar">
+            <Skeleton height={32} r={9} />
+            <SkeletonCard lines={3} />
           </View>
-          <SkeletonCard lines={3} />
-        </View>
-      ) : isError ? (
-        <View style={styles.state}>
-          <Text style={[type.subheadline, { color: colors.negative, textAlign: 'center' }]}>
-            Failed to load income: {error?.message || 'Unknown error'}
-          </Text>
-          <Pressable onPress={() => refetch()} accessibilityRole="button">
-            <Text style={[type.headline, { color: accents.finances }]}>Retry</Text>
-          </Pressable>
-        </View>
-      ) : !year ? (
-        <Card>
+        ) : isError ? (
           <View style={styles.state}>
-            <Text style={[type.subheadline, { color: colors.secondaryLabel }]}>No income history yet. Add a year to get started.</Text>
-            <Pressable onPress={addYear} accessibilityRole="button" style={styles.primary}>
-              <SymbolView name="plus" size={13} weight="bold" tintColor={colors.white} />
-              <Text style={[type.headline, { color: colors.white }]}>Add Year</Text>
+            <Text style={[type.subheadline, { color: colors.negative, textAlign: 'center' }]}>
+              Failed to load income: {error?.message || 'Unknown error'}
+            </Text>
+            <Pressable onPress={() => refetch()} accessibilityRole="button">
+              <Text style={[type.headline, { color: accents.finances }]}>Retry</Text>
             </Pressable>
           </View>
-        </Card>
-      ) : (
-        <>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.years}>
-            {available.map((y) => {
-              const active = y === year;
-              return (
-                <Pressable
-                  key={y}
-                  onPress={() => {
-                    haptics.selection();
-                    setSelectedYear(y);
-                  }}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                  style={[styles.yearChip, active && styles.yearChipActive]}>
-                  <Text style={[type.subheadline, tabularNums, { color: active ? colors.white : colors.label, fontWeight: '600' }]}>{y}</Text>
-                </Pressable>
-              );
-            })}
-            <Pressable onPress={addYear} accessibilityRole="button" accessibilityLabel="Add year" style={[styles.yearChip, styles.addChip]}>
-              <SymbolView name="plus" size={12} weight="bold" tintColor={colors.secondaryLabel} />
-              <Text style={[type.subheadline, { color: colors.secondaryLabel, fontWeight: '600' }]}>Year</Text>
-            </Pressable>
-          </ScrollView>
-
-          {/* Wide: the year's sources beside an all-years total chart. */}
-          <View style={wide ? styles.columns : undefined}>
-            <View style={wide ? styles.mainCol : undefined}>
-              <Card padded={false}>
-                <View style={styles.cardHeader}>
-                  <Text style={[type.title3, { color: colors.label, flex: 1 }]}>Income — {year}</Text>
-                  <Pressable
-                    onPress={() => openSource('new')}
-                    accessibilityRole="button"
-                    accessibilityLabel="Add income source"
-                    style={({ pressed }) => [styles.addButton, pressed && { opacity: 0.7 }]}>
-                    <SymbolView name="plus" size={13} weight="bold" tintColor={colors.white} />
-                    <Text style={[type.footnote, { color: colors.white, fontWeight: '600' }]}>Add</Text>
-                  </Pressable>
-                </View>
-
-                {list.length === 0 && (
-                  <Text style={[type.subheadline, styles.empty]}>No income sources yet for {year}. Tap Add to get started.</Text>
-                )}
-                {list.map((s) => (
-                  <Pressable
-                    key={s.id}
-                    onPress={() => openSource(String(s.id))}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${s.name}, ${fmt(s.amount)}`}
-                    accessibilityHint="Edit or delete"
-                    style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.fill }]}>
-                    <Text style={[type.subheadline, { flex: 1, color: colors.label, fontWeight: '600' }]} numberOfLines={1}>
-                      {s.name}
-                    </Text>
-                    <Text style={[type.subheadline, tabularNums, { color: colors.positive, fontWeight: '700' }]}>{fmt(s.amount)}</Text>
-                    <SymbolView name="chevron.right" size={11} weight="semibold" tintColor={colors.tertiaryLabel} />
-                  </Pressable>
-                ))}
-
-                <View style={styles.totalRow}>
-                  <Text style={[type.headline, { color: colors.label, flex: 1 }]}>Total</Text>
-                  <Text style={[type.title3, tabularNums, { color: colors.positive }]}>{fmt(total)}</Text>
-                </View>
-                <View style={styles.yoyRow} accessible accessibilityLabel={`Versus ${year - 1}: ${up ? 'up' : 'down'} ${fmt(Math.abs(change))}`}>
-                  <Text style={[type.footnote, { color: colors.secondaryLabel, flex: 1 }]}>vs {year - 1}</Text>
-                  <SymbolView name={up ? 'arrow.up.right' : 'arrow.down.right'} size={12} weight="bold" tintColor={up ? colors.positive : colors.negative} />
-                  <Text style={[type.subheadline, tabularNums, { color: up ? colors.positive : colors.negative, fontWeight: '600' }]}>
-                    {up ? '+' : ''}
-                    {fmt(change)} ({up ? '+' : '-'}
-                    {Math.abs(changePercent).toFixed(1)}%)
-                  </Text>
-                </View>
-              </Card>
+        ) : !year ? (
+          <Card>
+            <View style={styles.state}>
+              <Text style={[type.subheadline, { color: colors.secondaryLabel }]}>No income history yet. Add a year to get started.</Text>
+              <Pressable onPress={addYear} accessibilityRole="button" style={styles.primary}>
+                <SymbolView name="plus" size={13} weight="bold" tintColor={colors.white} />
+                <Text style={[type.headline, { color: colors.white }]}>Add Year</Text>
+              </Pressable>
             </View>
-            {wide && yearTotals.length > 0 && (
-              <View style={styles.sideCol}>
-                <Card>
-                  <Text style={[type.headline, { color: colors.label, marginBottom: spacing.md }]}>Income by year</Text>
-                  <BarChart
-                    data={yearTotals}
-                    tint={accents.finances}
-                    highlight={year != null ? String(year) : null}
-                    height={240}
-                    accessibilityLabel={`Income by year: ${describeSeries(yearTotals, fmt)}`}
-                    formatValue={formatThousands}
-                    onSelect={(label) => setSelectedYear(Number(label))}
-                  />
-                  <View style={styles.yearTotals}>
-                    {yearTotals.map((t) => (
-                      <View key={t.label} style={styles.yearTotalRow}>
-                        <Text style={[type.subheadline, tabularNums, { color: t.label === String(year) ? colors.label : colors.secondaryLabel, fontWeight: '600' }]}>
-                          {t.label}
-                        </Text>
-                        <Text style={[type.subheadline, tabularNums, { color: colors.positive, fontWeight: '600' }]}>{fmt(t.value)}</Text>
-                      </View>
-                    ))}
+          </Card>
+        ) : (
+          <>
+            <YearSegments years={available} selected={year} onSelect={setSelectedYear} />
+
+            {/* Wide: the year's sources beside an all-years total chart. */}
+            <View style={wide ? styles.columns : undefined}>
+              <View style={wide ? styles.mainCol : undefined}>
+                <Card padded={false}>
+                  <View style={styles.cardHeader}>
+                    <Text style={[type.title3, { color: colors.label, flex: 1 }]}>Income — {year}</Text>
+                    <Pressable
+                      onPress={() => openSource('new')}
+                      accessibilityRole="button"
+                      accessibilityLabel="Add income source"
+                      style={({ pressed }) => [styles.addButton, pressed && { opacity: 0.7 }]}>
+                      <SymbolView name="plus" size={13} weight="bold" tintColor={colors.white} />
+                      <Text style={[type.footnote, { color: colors.white, fontWeight: '600' }]}>Add</Text>
+                    </Pressable>
+                  </View>
+
+                  {list.length === 0 && (
+                    <Text style={[type.subheadline, styles.empty]}>No income sources yet for {year}. Tap Add to get started.</Text>
+                  )}
+                  {list.map((s) => (
+                    <Pressable
+                      key={s.id}
+                      onPress={() => openSource(String(s.id))}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${s.name}, ${fmt(s.amount)}`}
+                      accessibilityHint="Edit or delete"
+                      style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.fill }]}>
+                      <Text style={[type.subheadline, { flex: 1, color: colors.label, fontWeight: '600' }]} numberOfLines={1}>
+                        {s.name}
+                      </Text>
+                      <Text style={[type.subheadline, tabularNums, { color: colors.positive, fontWeight: '700' }]}>{fmt(s.amount)}</Text>
+                      <SymbolView name="chevron.right" size={11} weight="semibold" tintColor={colors.tertiaryLabel} />
+                    </Pressable>
+                  ))}
+
+                  <View style={styles.totalRow}>
+                    <Text style={[type.headline, { color: colors.label, flex: 1 }]}>Total</Text>
+                    <Text style={[type.title3, tabularNums, { color: colors.positive }]}>{fmt(total)}</Text>
+                  </View>
+                  <View style={styles.yoyRow} accessible accessibilityLabel={`Versus ${year - 1}: ${up ? 'up' : 'down'} ${fmt(Math.abs(change))}`}>
+                    <Text style={[type.footnote, { color: colors.secondaryLabel, flex: 1 }]}>vs {year - 1}</Text>
+                    <SymbolView name={up ? 'arrow.up.right' : 'arrow.down.right'} size={12} weight="bold" tintColor={up ? colors.positive : colors.negative} />
+                    <Text style={[type.subheadline, tabularNums, { color: up ? colors.positive : colors.negative, fontWeight: '600' }]}>
+                      {up ? '+' : ''}
+                      {fmt(change)} ({up ? '+' : '-'}
+                      {Math.abs(changePercent).toFixed(1)}%)
+                    </Text>
                   </View>
                 </Card>
               </View>
-            )}
-          </View>
-        </>
-      )}
-    </ScreenScrollView>
+              {wide && yearTotals.length > 0 && (
+                <View style={styles.sideCol}>
+                  <Card>
+                    <Text style={[type.headline, { color: colors.label, marginBottom: spacing.md }]}>Income by year</Text>
+                    <BarChart
+                      data={yearTotals}
+                      tint={accents.finances}
+                      highlight={year != null ? String(year) : null}
+                      height={240}
+                      accessibilityLabel={`Income by year: ${describeSeries(yearTotals, fmt)}`}
+                      formatValue={formatThousands}
+                      onSelect={(label) => setSelectedYear(Number(label))}
+                    />
+                    <View style={styles.yearTotals}>
+                      {yearTotals.map((t) => (
+                        <View key={t.label} style={styles.yearTotalRow}>
+                          <Text style={[type.subheadline, tabularNums, { color: t.label === String(year) ? colors.label : colors.secondaryLabel, fontWeight: '600' }]}>
+                            {t.label}
+                          </Text>
+                          <Text style={[type.subheadline, tabularNums, { color: colors.positive, fontWeight: '600' }]}>{fmt(t.value)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </Card>
+                </View>
+              )}
+            </View>
+          </>
+        )}
+      </ScreenScrollView>
+    </>
   );
 }
 
@@ -211,24 +193,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: accents.finances,
   },
-  years: { gap: spacing.sm },
   skeleton: { gap: spacing.lg },
   columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
   mainCol: { flex: 1.3, minWidth: 0 },
   sideCol: { flex: 1, minWidth: 0 },
   yearTotals: { marginTop: spacing.md, gap: spacing.xs },
   yearTotalRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  yearChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.secondaryGroupedBackground,
-  },
-  yearChipActive: { backgroundColor: accents.finances },
-  addChip: { borderWidth: 1, borderStyle: 'dashed', borderColor: colors.separator, backgroundColor: 'transparent' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.lg },
   addButton: {
     flexDirection: 'row',
