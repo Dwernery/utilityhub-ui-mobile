@@ -60,8 +60,3 @@ export function posterArt(id: string, color: string): PosterArt {
     ],
   };
 }
-
-/** Two stops for a left→right progress-bar gradient. */
-export function gradientBar(color: string): [string, string] {
-  return [shade(color, -18), shade(color, 22)];
-}

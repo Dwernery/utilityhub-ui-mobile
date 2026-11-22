@@ -2,15 +2,13 @@
 // `watched` is a flat map keyed by item id (movies/specials) or episode.globalId (tv episodes).
 import type { McuItem, WatchedMap, WatchStats, WatchStatus } from '../types';
 
-export const STATUS_CYCLE: WatchStatus[] = ['UNWATCHED', 'IN_PROGRESS', 'WATCHED'];
-
 export function getStatus(watched: WatchedMap, key: string): WatchStatus {
   return watched[key] ?? 'UNWATCHED';
 }
 
-export function nextStatus(current: WatchStatus | undefined): WatchStatus {
-  const index = STATUS_CYCLE.indexOf(current ?? 'UNWATCHED');
-  return STATUS_CYCLE[(index + 1) % STATUS_CYCLE.length];
+/** One-tap toggle: anything not yet watched becomes WATCHED; WATCHED goes back to UNWATCHED. */
+export function toggleWatched(current: WatchStatus | undefined): WatchStatus {
+  return current === 'WATCHED' ? 'UNWATCHED' : 'WATCHED';
 }
 
 /** TV: all episodes WATCHED. Movies/specials: status is WATCHED. */
@@ -124,6 +122,27 @@ export function combineStats(statsList: WatchStats[]): WatchStats {
 /** Whole hours ("143h"); minutes only for the last stretch under an hour ("45 min to go"). */
 export function formatMinutes(minutes: number): string {
   return minutes < 60 ? `${Math.round(minutes)} min` : `${Math.round(minutes / 60)}h`;
+}
+
+/** Runtime for detail views: "45 min", "2h", "2h 14m". */
+export function formatRuntime(minutes: number): string {
+  const m = Math.round(minutes);
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const rest = m % 60;
+  return rest ? `${h}h ${rest}m` : `${h}h`;
+}
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/** "3 movies · 1 special", skipping types with none; "No titles yet" when empty. */
+export function typeSummary(stats: Pick<WatchStats, 'movies' | 'episodes' | 'specials'>): string {
+  const parts = [
+    stats.movies && plural(stats.movies, 'movie'),
+    stats.episodes && plural(stats.episodes, 'episode'),
+    stats.specials && plural(stats.specials, 'special'),
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : 'No titles yet';
 }
 
 export function percentage(done: number, total: number): number {

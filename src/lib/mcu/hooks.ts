@@ -5,7 +5,7 @@ import { useState } from 'react';
 import * as api from './api';
 import { getMcuTracker, updateContentStatus } from './api';
 import { uploadFileToS3, validateFile, type PickedFile } from '../library/utils/s3Upload';
-import { parseGlobalId, type EpisodeBody, type MovieBody, type ShowSeasonBody } from './utils/editing';
+import type { EpisodeBody, MovieBody, ShowSeasonBody } from './utils/editing';
 import { MCU_TRACKER_KEY } from './queryKeys';
 import type { McuTrackerResponse } from './types';
 
@@ -29,12 +29,7 @@ export function useUpdateContentStatus() {
             movies: domain.movies?.map((movie) => (movie.globalId === globalId ? { ...movie, status } : movie)),
             shows: domain.shows?.map((show) => ({
               ...show,
-              seasons: show.seasons?.map((season) => ({
-                ...season,
-                episodes: season.episodes?.map((episode) =>
-                  episode.globalId === globalId ? { ...episode, status } : episode,
-                ),
-              })),
+              episodes: show.episodes?.map((episode) => (episode.globalId === globalId ? { ...episode, status } : episode)),
             })),
           })),
         };
@@ -75,7 +70,7 @@ export function useSaveMcuItem() {
           setUploadProgress(0.05);
           const { presignedUrl, s3Key } = await api.getPosterUploadUrl(input.posterFile.name, input.posterFile.mimeType);
           await uploadFileToS3(presignedUrl, input.posterFile, (f) => setUploadProgress(0.05 + f * 0.85));
-          await api.attachPoster(input.kind, parseGlobalId(saved.globalId)!.id, s3Key);
+          await api.attachPoster(input.kind, saved.id, s3Key);
           setUploadProgress(1);
         } catch (error) {
           posterError = error instanceof Error ? error : new Error(String(error));
@@ -91,15 +86,12 @@ export function useSaveMcuItem() {
   return { ...mutation, uploadProgress };
 }
 
-/** Delete a movie/special ("movie:12") or a whole season with its episodes ("show:3"). */
+/** Delete a movie/special, or a whole season with its episodes. */
 export function useDeleteMcuItem() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (globalId: string) => {
-      const parsed = parseGlobalId(globalId);
-      if (!parsed || parsed.kind === 'episode') throw new Error(`Can't delete ${globalId}`);
-      return parsed.kind === 'show' ? api.deleteShowSeason(parsed.id) : api.deleteMovie(parsed.id);
-    },
+    mutationFn: ({ kind, id }: { kind: 'movie' | 'show'; id: number }) =>
+      kind === 'show' ? api.deleteShowSeason(id) : api.deleteMovie(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: MCU_TRACKER_KEY }),
   });
 }

@@ -1,5 +1,15 @@
 import type { McuItem, WatchedMap } from '../types';
-import { computeStats, formatMinutes, getItemProgressFraction, isItemComplete, isItemPartial, nextStatus, percentage } from './stats';
+import {
+  computeStats,
+  formatMinutes,
+  formatRuntime,
+  getItemProgressFraction,
+  isItemComplete,
+  isItemPartial,
+  percentage,
+  toggleWatched,
+  typeSummary,
+} from './stats';
 
 const movie = { id: 'movie:1', globalId: 'movie:1', type: 'movie', title: 'M' } as McuItem;
 const special = { id: 'movie:2', globalId: 'movie:2', type: 'special', title: 'S' } as McuItem;
@@ -14,12 +24,28 @@ const season = {
   ],
 } as McuItem;
 
-describe('nextStatus', () => {
-  it('cycles unwatched → in progress → watched → unwatched', () => {
-    expect(nextStatus(undefined)).toBe('IN_PROGRESS');
-    expect(nextStatus('UNWATCHED')).toBe('IN_PROGRESS');
-    expect(nextStatus('IN_PROGRESS')).toBe('WATCHED');
-    expect(nextStatus('WATCHED')).toBe('UNWATCHED');
+describe('toggleWatched', () => {
+  it('marks anything unfinished watched, and watched back to unwatched', () => {
+    expect(toggleWatched(undefined)).toBe('WATCHED');
+    expect(toggleWatched('UNWATCHED')).toBe('WATCHED');
+    expect(toggleWatched('IN_PROGRESS')).toBe('WATCHED');
+    expect(toggleWatched('WATCHED')).toBe('UNWATCHED');
+  });
+});
+
+describe('formatRuntime', () => {
+  it('shows minutes under an hour, then hours and minutes', () => {
+    expect(formatRuntime(45)).toBe('45 min');
+    expect(formatRuntime(120)).toBe('2h');
+    expect(formatRuntime(134)).toBe('2h 14m');
+  });
+});
+
+describe('typeSummary', () => {
+  it('skips empty types and pluralizes', () => {
+    expect(typeSummary({ movies: 1, episodes: 0, specials: 2 })).toBe('1 movie · 2 specials');
+    expect(typeSummary({ movies: 3, episodes: 1, specials: 0 })).toBe('3 movies · 1 episode');
+    expect(typeSummary({ movies: 0, episodes: 0, specials: 0 })).toBe('No titles yet');
   });
 });
 

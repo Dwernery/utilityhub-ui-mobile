@@ -8,7 +8,6 @@ import {
   findRaw,
   nextEpisodeNumber,
   nextSeasonDraft,
-  parseGlobalId,
 } from './editing';
 
 // Only the fields these helpers read.
@@ -18,6 +17,7 @@ const data = {
       domainName: 'Phase 4',
       movies: [
         {
+          id: 7,
           globalId: 'movie:7',
           title: 'Werewolf by Night',
           type: 'SPECIAL',
@@ -28,18 +28,15 @@ const data = {
       ],
       shows: [
         {
+          id: 3,
           globalId: 'show:3',
           title: 'Loki',
+          seasonNumber: 1,
           premiereDate: '2021-06-09',
           synopsis: 'Variant.',
-          seasons: [
-            {
-              seasonNumber: 1,
-              episodes: [
-                { id: 10, globalId: 'episode:10', episodeNumber: 1 },
-                { id: 12, globalId: 'episode:12', episodeNumber: 3 },
-              ],
-            },
+          episodes: [
+            { id: 10, globalId: 'episode:10', episodeNumber: 1 },
+            { id: 12, globalId: 'episode:12', episodeNumber: 3 },
           ],
         },
       ],
@@ -48,17 +45,6 @@ const data = {
     { domainName: 'Defenders', movies: [], shows: [] },
   ],
 } as unknown as McuTrackerResponse;
-
-describe('parseGlobalId', () => {
-  it('splits kind and numeric id', () => {
-    expect(parseGlobalId('show:3')).toEqual({ kind: 'show', id: 3 });
-    expect(parseGlobalId('episode:40')).toEqual({ kind: 'episode', id: 40 });
-  });
-  it('rejects anything else', () => {
-    expect(parseGlobalId('show:3-season1')).toBeNull();
-    expect(parseGlobalId(undefined)).toBeNull();
-  });
-});
 
 describe('findRaw', () => {
   it('finds a movie with its domain', () => {
@@ -69,8 +55,8 @@ describe('findRaw', () => {
   it('finds a season with its episodes', () => {
     const raw = findRaw(data, 'show:3');
     if (raw?.kind !== 'show') throw new Error('expected a show');
-    expect(raw.seasonNumber).toBe(1);
-    expect(raw.episodes).toHaveLength(2);
+    expect(raw.show.seasonNumber).toBe(1);
+    expect(raw.show.episodes).toHaveLength(2);
   });
   it('returns null for unknown ids', () => {
     expect(findRaw(data, 'movie:999')).toBeNull();
@@ -78,7 +64,7 @@ describe('findRaw', () => {
 });
 
 describe('domainOptions', () => {
-  it('lists Phase 1–6 first, then other domains alphabetically', () => {
+  it('lists every saga phase first, then other domains alphabetically', () => {
     expect(domainOptions(data)).toEqual([
       'Phase 1',
       'Phase 2',
@@ -86,6 +72,9 @@ describe('domainOptions', () => {
       'Phase 4',
       'Phase 5',
       'Phase 6',
+      'Phase 7',
+      'Phase 8',
+      'Phase 9',
       'Defenders',
       'Fox X-Men Universe',
     ]);
@@ -123,7 +112,7 @@ describe('drafts', () => {
   it('suggests the episode after the highest number', () => {
     const loki = findRaw(data, 'show:3');
     if (loki?.kind !== 'show') throw new Error('expected a show');
-    expect(nextEpisodeNumber(loki.episodes)).toBe(4);
+    expect(nextEpisodeNumber(loki.show.episodes)).toBe(4);
     expect(nextEpisodeNumber([])).toBe(1);
   });
 });

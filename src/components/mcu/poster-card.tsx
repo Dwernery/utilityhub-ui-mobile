@@ -1,19 +1,20 @@
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { memo, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActionSheetIOS, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { haptics } from '@/lib/haptics';
-import type { McuItem, WatchedMap } from '@/lib/mcu/types';
-import { MODAL_LABELS, STATUS_LABELS } from '@/lib/mcu/utils/constants';
+import type { McuItem, WatchedMap, WatchStatus } from '@/lib/mcu/types';
+import { MODAL_LABELS, STATUS_LABELS, STATUS_MENU_ORDER } from '@/lib/mcu/utils/constants';
 import { posterArt } from '@/lib/mcu/utils/posterArt';
 import {
   getItemProgressFraction,
   getStatus,
   isItemComplete,
   isItemPartial,
+  toggleWatched,
 } from '@/lib/mcu/utils/stats';
 
 export const POSTER_WIDTH = 112;
@@ -26,9 +27,11 @@ interface PosterCardProps {
   /** Phase / category accent color (hex) */
   color: string;
   watched: WatchedMap;
-  /** Movies/specials: cycle status. (TV seasons open the detail sheet instead.) */
-  onToggleItem: (item: McuItem) => void;
+  /** Movies/specials: set a watch status. (TV seasons open the detail sheet instead.) */
+  onChangeStatus: (item: McuItem, status: WatchStatus) => void;
   onSelectItem: (item: McuItem) => void;
+  /** Always show the title overlay (search results), even over artwork. */
+  showTitle?: boolean;
 }
 
 /** Generative fallback art: dark diagonal base + three seeded radial color blobs. */
@@ -133,7 +136,14 @@ function StatusBadge({ complete, partial, fraction, color }: { complete: boolean
  * MCU poster (2:3). Tap opens details; the corner badge toggles watched (movies/specials)
  * or opens the episode list (TV). Shows real artwork when available, generative art otherwise.
  */
-export const PosterCard = memo(function PosterCard({ item, color, watched, onToggleItem, onSelectItem }: PosterCardProps) {
+export const PosterCard = memo(function PosterCard({
+  item,
+  color,
+  watched,
+  onChangeStatus,
+  onSelectItem,
+  showTitle = false,
+}: PosterCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(1);
@@ -157,28 +167,59 @@ export const PosterCard = memo(function PosterCard({ item, color, watched, onTog
     if (!reduceMotion) scale.set(withSpring(v, { damping: 15, stiffness: 400 }));
   };
 
+  const current = getStatus(watched, item.id);
+
+  // One tap toggles watched; "In Progress" lives in the long-press menu so a stray tap can't
+  // reset a finished movie.
   const onBadgePress = () => {
     if (isTv) {
       onSelectItem(item);
     } else {
       haptics.tap();
-      onToggleItem(item);
+      onChangeStatus(item, toggleWatched(current));
     }
+  };
+
+  const showStatusMenu = () => {
+    const choices = STATUS_MENU_ORDER.filter((s) => s !== current);
+    haptics.tap();
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: item.title,
+        message: `Currently ${STATUS_LABELS[current].toLowerCase()}`,
+        options: [...choices.map((s) => `Mark ${STATUS_LABELS[s]}`), 'Cancel'],
+        cancelButtonIndex: choices.length,
+      },
+      (index) => {
+        const status = choices[index];
+        if (status) onChangeStatus(item, status);
+      },
+    );
   };
 
   return (
     <Animated.View style={[styles.card, pressStyle, complete && { boxShadow: `0 0 0 2px ${color}, 0 6px 18px ${color}55` }]}>
       <Pressable
         onPress={() => onSelectItem(item)}
+        onLongPress={isTv ? undefined : showStatusMenu}
         onPressIn={() => springTo(0.96)}
         onPressOut={() => springTo(1)}
         accessibilityRole="button"
         accessibilityLabel={`${item.title}${subtitle ? `, ${subtitle}` : ''}. ${statusText}`}
         accessibilityHint="Opens details"
-        accessibilityActions={isTv ? undefined : [{ name: 'activate' }, { name: 'magicTap', label: complete ? MODAL_LABELS.MARK_UNWATCHED : MODAL_LABELS.MARK_WATCHED }]}
+        accessibilityActions={
+          isTv
+            ? undefined
+            : [
+                { name: 'activate' },
+                { name: 'magicTap', label: complete ? MODAL_LABELS.MARK_UNWATCHED : MODAL_LABELS.MARK_WATCHED },
+                { name: 'longpress', label: 'Change status' },
+              ]
+        }
         onAccessibilityAction={(e) => {
           if (e.nativeEvent.actionName === 'activate') onSelectItem(item);
           if (e.nativeEvent.actionName === 'magicTap') onBadgePress();
+          if (e.nativeEvent.actionName === 'longpress') showStatusMenu();
         }}
         style={styles.fill}>
         <PosterArt id={item.id} color={color} />
@@ -202,7 +243,7 @@ export const PosterCard = memo(function PosterCard({ item, color, watched, onTog
         )}
 
         {/* No hover on touch: the title overlay shows whenever there's no artwork to identify the poster. */}
-        {!hasImage && (
+        {(!hasImage || showTitle) && (
           <View style={styles.caption}>
             <Text style={[styles.title, complete && styles.titleDone]} numberOfLines={2}>
               {item.title}

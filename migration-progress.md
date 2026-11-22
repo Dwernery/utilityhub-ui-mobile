@@ -66,7 +66,7 @@ Not covered: typing (the iOS 27 simulator clipboard doesn't work, and the driver
 ## Notes / deviations from the web app
 - React Query now refetches stale data when the app returns to the foreground. The web app disabled `refetchOnWindowFocus`.
 - GET errors now include the HTTP status in the message.
-- MCU poster art is rendered with SVG gradient stops instead of CSS strings. This fixes the web's invalid `rgb(...)FA` colors.
+- MCU poster art is rendered with SVG gradient stops instead of CSS strings. The web's `rgb(...)FA` colors were invalid CSS, so its fallback art never showed; fixed on the web too (2026-11-22), where the art now also sits under the artwork instead of over it.
 - Cover upload progress is real: it comes from the `expo-file-system` `File.upload` callback, where the web app used fixed 25/50/75% steps.
 - Charts: Swift Charts has no Y-domain or tooltip API, so the net-worth line chart is custom SVG. Bar charts use Swift Charts.
 - Book covers: 2 of the 3 `s3Url` covers return HTTP 403 from S3 (`promised-land.webp`, `the-road.webp`). The app shows the placeholder for them. This is a bucket/data problem, not an app bug.
@@ -92,3 +92,8 @@ Not covered: typing (the iOS 27 simulator clipboard doesn't work, and the driver
 - Finances month sheet: no local copy of the month. Everything is derived from the net-worth query and refetched after each change. The web hand-patched a `displayMonth` copy, which could drift.
 - Finances: added a one-tap "paid" toggle on each transaction row. The web only had paid in the edit form.
 - MCU status bar: light only while the MCU tab is focused (`useFocusEffect` + `setStatusBarStyle`). A `<StatusBar style="light">` leaked into other tabs, because native tabs keep every tab mounted.
+- MCU status taps: the poster badge and episode rows toggle Watched ↔ Unwatched in one tap (web too, since 2026-11-22). In Progress is in the long-press menu: an action sheet on movie/special posters, and in each episode's existing long-press sheet alongside Edit and Delete. The web uses the movie modal's status buttons and an In Progress button on each episode row instead.
+- MCU search and filter (web too): a header search bar matches titles and episode titles across both views and shows a poster grid with titles always visible. While searching, both apps turn the view switch and the filter off (greyed out), show every match regardless of the filter, and keep the progress numbers. The filter menu's "Not Finished" hides watched titles and empty phases. Percentages still count the whole section.
+- MCU summaries skip zero counts and pluralize ("1 movie · 2 specials"). The detail hero shows "Season 2 · 2023" for seasons, and runtime as "2h 14m".
+- MCU parity pass (2026-11-22): web saga/category progress bars use the section color like mobile (were a fixed blue→violet gradient); the web's finished TV badge now shows a check like mobile; status toasts read "Marked In Progress" in both.
+- MCU colors (both apps, 2026-11-22): Expanded Universe categories get their own color from a 6-color palette (all ≥ 5.3:1 on the cards) in `categoryColors`, instead of one dark red (#B91C1C, 2.3:1). Fox X-Men Universe, Sony Spider-Man Universe and The Defenders Saga are pinned; new categories take the least-used color. The Mutant Saga (teal, Phases 7–9, years TBD) is in `SAGAS`, hidden until it has content; the phase picker lists Phases 1–9.

@@ -25,7 +25,6 @@ import {
   isDraftKind,
   KIND_LABELS,
   nextSeasonDraft,
-  parseGlobalId,
   type ItemDraft,
   type MovieBody,
   type ShowSeasonBody,
@@ -63,7 +62,7 @@ export default function McuItemSheet() {
       <ItemForm
         key={params.globalId}
         initial={draftFromRaw(raw)}
-        id={parseGlobalId(params.globalId)?.id}
+        id={raw.kind === 'movie' ? raw.movie.id : raw.show.id}
         hasPoster={!!(raw.kind === 'movie' ? raw.movie.s3Url : raw.show.s3Url)}
       />
     );
@@ -211,7 +210,7 @@ function ItemForm({ initial, id, hasPoster }: { initial: ItemDraft; id?: number;
               editable={!busy}
             />
           )}
-          <FormValueRow label="Phase" required value={draft.domain} placeholder="Choose" disabled={busy} onPress={chooseDomain} />
+          <FormValueRow label="Phase or Category" required value={draft.domain} placeholder="Choose" disabled={busy} onPress={chooseDomain} />
         </FormSection>
 
         <FormSection title="Synopsis">
@@ -227,7 +226,7 @@ function ItemForm({ initial, id, hasPoster }: { initial: ItemDraft; id?: number;
           />
         </FormSection>
 
-        <FormSection title="Poster" footer={hasPoster ? 'Choosing an image replaces the current poster.' : 'Optional.'}>
+        <FormSection title="Poster" footer={hasPoster ? 'Choosing an image replaces the current poster.' : 'Optional. JPG, PNG, WebP or GIF, up to 10 MB.'}>
           <FilePickerButton
             label="Poster"
             selectedFile={poster}

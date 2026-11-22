@@ -12,9 +12,7 @@ export function buildWatchedMap(data: McuTrackerResponse | undefined): WatchedMa
   for (const domain of data?.domains ?? []) {
     for (const movie of domain.movies) watched[movie.globalId] = movie.status ?? 'UNWATCHED';
     for (const show of domain.shows) {
-      for (const season of show.seasons) {
-        for (const episode of season.episodes) watched[episode.globalId] = episode.status ?? 'UNWATCHED';
-      }
+      for (const episode of show.episodes) watched[episode.globalId] = episode.status ?? 'UNWATCHED';
     }
   }
   return watched;

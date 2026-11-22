@@ -1,15 +1,17 @@
 import type { ApiEpisode, ApiMovie, ApiShow, McuTrackerResponse, TvItem } from '../types';
 import { normalizeTrackerData } from './normalizeTrackerData';
+import { CATEGORY_PALETTE } from './categoryColors';
 
 // Builders fill in the fields every API object has, so each fixture shows only what matters.
+const idOf = (globalId: string) => Number(globalId.split(':')[1]);
 const movie = (globalId: string, title: string, premiereDate: string, type: ApiMovie['type'] = 'MOVIE'): ApiMovie => ({
-  globalId, title, premiereDate, type, runtime: null, synopsis: null, s3Url: null, status: 'UNWATCHED',
+  id: idOf(globalId), globalId, title, premiereDate, type, runtime: null, synopsis: null, s3Url: null, status: 'UNWATCHED',
 });
 const episode = (n: number): ApiEpisode => ({
   id: n, globalId: `episode:${n}`, title: `Episode ${n}`, episodeNumber: n, runtime: null, status: 'UNWATCHED',
 });
 const show = (globalId: string, title: string, premiereDate: string, episodes: ApiEpisode[]): ApiShow => ({
-  globalId, title, premiereDate, synopsis: null, s3Url: null, seasons: [{ seasonNumber: 1, episodes }],
+  id: idOf(globalId), globalId, title, seasonNumber: 1, premiereDate, synopsis: null, s3Url: null, episodes,
 });
 
 const api: McuTrackerResponse = {
@@ -33,7 +35,6 @@ describe('normalizeTrackerData', () => {
 
   it('groups "Phase N" domains into phases, in phase order', () => {
     expect(phases.map((p) => p.num)).toEqual([1, 2]);
-    expect(phases[0].color).toBe('#4C8DFF'); // the API sends no colors, so phases use the default
   });
 
   it('sorts items within a phase by premiere date', () => {
@@ -58,8 +59,9 @@ describe('normalizeTrackerData', () => {
     expect(expandedCategories[0]).toMatchObject({
       id: 'sony-spider-verse',
       title: 'Sony Spider-Verse',
-      color: '#B91C1C',
     });
+    // Not pinned, so it takes a palette color (see categoryColors).
+    expect(CATEGORY_PALETTE).toContain(expandedCategories[0].color);
   });
 
   it('handles a missing response', () => {

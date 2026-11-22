@@ -6,20 +6,24 @@ import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { mcuColors, radius, spacing, tabularNums, type } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
-import type { McuItem, WatchedMap, WatchStats } from '@/lib/mcu/types';
+import type { McuItem, WatchedMap, WatchStats, WatchStatus } from '@/lib/mcu/types';
 import { BREAKDOWN, VIEWS, type TrackerView } from '@/lib/mcu/utils/constants';
-import type { PhaseCard, TrackerSection } from '@/lib/mcu/utils/sections';
-import { formatMinutes, percentage } from '@/lib/mcu/utils/stats';
+import type { PhaseCard, SearchResult, TrackerSection } from '@/lib/mcu/utils/sections';
+import { formatMinutes, percentage, typeSummary } from '@/lib/mcu/utils/stats';
 
 import { PosterCard } from './poster-card';
 
 export const MCU_BORDER = '#334155'; // slate-700
 
-/** View switcher + overall progress + per-type breakdown (the web tracker Header). */
-export function TrackerOverview({ view, onChangeView, stats }: {
+/**
+ * View switcher + overall progress + per-type breakdown (the web tracker Header).
+ * `viewSwitchDisabled` while searching: results cover both views, so the switch is turned off.
+ */
+export function TrackerOverview({ view, onChangeView, stats, viewSwitchDisabled = false }: {
   view: TrackerView;
   onChangeView: (v: TrackerView) => void;
   stats: WatchStats;
+  viewSwitchDisabled?: boolean;
 }) {
   // Weighted by runtime, so a 3-hour movie moves the bar more than a 30-minute episode.
   const pct = percentage(stats.minutesDone, stats.minutes);
@@ -30,6 +34,7 @@ export function TrackerOverview({ view, onChangeView, stats }: {
         values={VIEWS.map((v) => v.label)}
         selectedIndex={VIEWS.findIndex((v) => v.key === view)}
         appearance="dark"
+        enabled={!viewSwitchDisabled}
         onChange={(e) => {
           const next = VIEWS[e.nativeEvent.selectedSegmentIndex]?.key;
           if (next && next !== view) {
@@ -78,11 +83,11 @@ export function TrackerOverview({ view, onChangeView, stats }: {
   );
 }
 
-function PosterRow({ items, color, watched, onToggleItem, onSelectItem }: {
+function PosterRow({ items, color, watched, onChangeStatus, onSelectItem }: {
   items: McuItem[];
   color: string;
   watched: WatchedMap;
-  onToggleItem: (item: McuItem) => void;
+  onChangeStatus: (item: McuItem, status: WatchStatus) => void;
   onSelectItem: (item: McuItem) => void;
 }) {
   return (
@@ -99,11 +104,35 @@ function PosterRow({ items, color, watched, onToggleItem, onSelectItem }: {
           item={item}
           color={color}
           watched={watched}
-          onToggleItem={onToggleItem}
+          onChangeStatus={onChangeStatus}
           onSelectItem={onSelectItem}
         />
       ))}
     </ScrollView>
+  );
+}
+
+/** Search results: posters in a wrapping grid, each keeping its phase/category color. */
+export function PosterGrid({ results, watched, onChangeStatus, onSelectItem }: {
+  results: SearchResult[];
+  watched: WatchedMap;
+  onChangeStatus: (item: McuItem, status: WatchStatus) => void;
+  onSelectItem: (item: McuItem) => void;
+}) {
+  return (
+    <View style={styles.grid}>
+      {results.map(({ item, color }) => (
+        <PosterCard
+          key={item.globalId}
+          item={item}
+          color={color}
+          watched={watched}
+          onChangeStatus={onChangeStatus}
+          onSelectItem={onSelectItem}
+          showTitle
+        />
+      ))}
+    </View>
   );
 }
 
@@ -113,11 +142,11 @@ function PhaseCardView({ card, color, expanded, onToggle, ...row }: {
   expanded: boolean;
   onToggle: () => void;
   watched: WatchedMap;
-  onToggleItem: (item: McuItem) => void;
+  onChangeStatus: (item: McuItem, status: WatchStatus) => void;
   onSelectItem: (item: McuItem) => void;
 }) {
   const reduceMotion = useReducedMotion();
-  const summary = `${card.stats.movies} movies · ${card.stats.episodes} episodes · ${card.stats.specials} specials`;
+  const summary = typeSummary(card.stats);
   return (
     <View style={styles.phaseCard}>
       <Pressable
@@ -145,18 +174,18 @@ function PhaseCardView({ card, color, expanded, onToggle, ...row }: {
 }
 
 /** A saga (or Expanded Universe category): glowing title, progress, then phase cards or posters. */
-export function SagaSectionView({ section, expanded, onToggle, watched, onToggleItem, onSelectItem }: {
+export function SagaSectionView({ section, expanded, onToggle, watched, onChangeStatus, onSelectItem }: {
   section: TrackerSection;
   expanded: Record<string, boolean>;
   onToggle: (key: string) => void;
   watched: WatchedMap;
-  onToggleItem: (item: McuItem) => void;
+  onChangeStatus: (item: McuItem, status: WatchStatus) => void;
   onSelectItem: (item: McuItem) => void;
 }) {
   const open = !!expanded[section.key];
   const pct = percentage(section.stats.minutesDone, section.stats.minutes);
   const { color } = section;
-  const row = { watched, onToggleItem, onSelectItem };
+  const row = { watched, onChangeStatus, onSelectItem };
 
   return (
     <View style={styles.section}>
@@ -245,4 +274,5 @@ const styles = StyleSheet.create({
   phaseLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 0.8 },
   phaseBody: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: MCU_BORDER, paddingVertical: spacing.md },
   posterRow: { gap: 10, paddingHorizontal: spacing.md, paddingVertical: 4 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingTop: 4 },
 });

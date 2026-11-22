@@ -25,18 +25,16 @@ export function getInProgress(data: McuTrackerResponse | undefined): InProgressE
         kind: 'movie',
       })),
     ...(domain.shows ?? []).flatMap((show) =>
-      (show.seasons ?? []).flatMap((season) =>
-        (season.episodes ?? [])
-          .filter((e) => e.status === 'IN_PROGRESS')
-          .map<InProgressEntry>((e) => ({
-            key: e.globalId,
-            title: show.title,
-            subtitle: e.title,
-            s3Url: show.s3Url,
-            kind: 'episode',
-            seasonNumber: season.seasonNumber,
-          })),
-      ),
+      (show.episodes ?? [])
+        .filter((e) => e.status === 'IN_PROGRESS')
+        .map<InProgressEntry>((e) => ({
+          key: e.globalId,
+          title: show.title,
+          subtitle: e.title,
+          s3Url: show.s3Url,
+          kind: 'episode',
+          seasonNumber: show.seasonNumber,
+        })),
     ),
   ]);
 }

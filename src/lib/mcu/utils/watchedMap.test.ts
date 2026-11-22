@@ -8,13 +8,13 @@ describe('buildWatchedMap', () => {
         {
           domainName: 'Phase 1',
           movies: [
-            { globalId: 'movie:1', title: 'A', type: 'MOVIE', premiereDate: '2008-05-02', runtime: null, synopsis: null, s3Url: null, status: 'WATCHED' },
-            { globalId: 'movie:2', title: 'B', type: 'SPECIAL', premiereDate: '2008-06-01', runtime: null, synopsis: null, s3Url: null, status: null },
+            { id: 1, globalId: 'movie:1', title: 'A', type: 'MOVIE', premiereDate: '2008-05-02', runtime: null, synopsis: null, s3Url: null, status: 'WATCHED' },
+            { id: 2, globalId: 'movie:2', title: 'B', type: 'SPECIAL', premiereDate: '2008-06-01', runtime: null, synopsis: null, s3Url: null, status: null },
           ],
           shows: [
             {
-              globalId: 'show:1', title: 'S', premiereDate: '2021-01-15', synopsis: null, s3Url: null,
-              seasons: [{ seasonNumber: 1, episodes: [{ id: 3, globalId: 'episode:3', title: 'E', episodeNumber: 1, runtime: null, status: 'IN_PROGRESS' }] }],
+              id: 1, globalId: 'show:1', title: 'S', seasonNumber: 1, premiereDate: '2021-01-15', synopsis: null, s3Url: null,
+              episodes: [{ id: 3, globalId: 'episode:3', title: 'E', episodeNumber: 1, runtime: null, status: 'IN_PROGRESS' }],
             },
           ],
         },

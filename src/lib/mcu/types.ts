@@ -14,23 +14,21 @@ export interface ApiEpisode {
   status: WatchStatus | null;
 }
 
-/** The API sends exactly one season per show object. */
-export interface ApiSeason {
-  seasonNumber: number;
-  episodes: ApiEpisode[];
-}
-
+/** One season of a show: each show record in the API is a single season. */
 export interface ApiShow {
+  id: number;
   globalId: string;
   title: string;
+  seasonNumber: number;
   /** `YYYY-MM-DD` */
   premiereDate: string;
   synopsis: string | null;
   s3Url: string | null;
-  seasons: ApiSeason[];
+  episodes: ApiEpisode[];
 }
 
 export interface ApiMovie {
+  id: number;
   globalId: string;
   title: string;
   type: 'MOVIE' | 'SPECIAL';
@@ -58,6 +56,8 @@ export interface McuTrackerResponse {
 export type ItemType = 'movie' | 'special' | 'tv';
 
 export interface Episode {
+  /** The API's numeric id, for edit/delete calls. */
+  id: number;
   title: string;
   globalId: string;
   episodeNumber: number;
@@ -65,7 +65,10 @@ export interface Episode {
 }
 
 interface BaseItem {
+  /** Unique per poster (React key). */
   id: string;
+  /** The API's numeric id of the movie or season, for edit/delete calls. */
+  recordId: number;
   globalId: string;
   title: string;
   /** Normalized to the premiere year */
@@ -88,9 +91,9 @@ export interface TvItem extends BaseItem {
 
 export type McuItem = MovieItem | TvItem;
 
+/** Phases show their saga's color (SAGAS), so they don't carry one. */
 export interface Phase {
   num: number;
-  color: string;
   items: McuItem[];
 }
 

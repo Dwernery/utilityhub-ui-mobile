@@ -1,6 +1,6 @@
 import type { ExpandedCategory, McuItem, Phase, WatchedMap, WatchStats } from '../types';
 import { SAGAS } from './constants';
-import { combineStats, computeStats } from './stats';
+import { combineStats, computeStats, isItemComplete, typeSummary } from './stats';
 
 export interface PhaseCard {
   key: string;
@@ -21,7 +21,15 @@ export interface TrackerSection {
   stats: WatchStats;
 }
 
-/** Saga sections for the "MCU Phases" view (ported from the web Tracker). */
+/** The color a phase is shown in: its saga's (phases have none of their own). */
+export function phaseColor(num: number): string {
+  return (SAGAS.find((saga) => saga.phaseNums.includes(num)) ?? SAGAS[0]).color;
+}
+
+/** Accent for a phase or category, as shown on its posters. */
+const groupColor = (group: Phase | ExpandedCategory) => ('num' in group ? phaseColor(group.num) : group.color);
+
+/** Saga sections for the "MCU Phases" view (ported from the web Tracker). Sagas with no phases yet are left out. */
 export function sagaSections(phases: Phase[], watched: WatchedMap): TrackerSection[] {
   return SAGAS.map((saga) => {
     const cards = saga.phaseNums
@@ -30,37 +38,81 @@ export function sagaSections(phases: Phase[], watched: WatchedMap): TrackerSecti
       .map((phase) => ({
         key: `phase-${phase.num}`,
         label: `PHASE ${phase.num}`,
-        color: phase.color,
+        color: saga.color,
         items: phase.items,
         stats: computeStats(phase.items, watched),
       }));
     return {
       key: `saga-${saga.id}`,
       title: saga.title,
-      subtitle: `${saga.years} · Phases ${saga.phaseNums.join('–')}`,
+      subtitle: [saga.years, `Phases ${saga.phaseNums[0]}–${saga.phaseNums[saga.phaseNums.length - 1]}`].filter(Boolean).join(' · '),
       color: saga.color,
       cards,
       isCategory: false,
       stats: combineStats(cards.map((c) => c.stats)),
     };
-  });
+  }).filter((section) => section.cards.length > 0);
 }
 
 /** One section per Expanded Universe category. */
 export function categorySections(categories: ExpandedCategory[], watched: WatchedMap): TrackerSection[] {
   return categories.map((category) => {
     const stats = computeStats(category.items, watched);
-    const metrics = `${stats.movies} movies · ${stats.episodes} episodes · ${stats.specials} specials`;
     return {
       key: `saga-${category.id}`,
       title: category.title,
-      subtitle: metrics,
+      subtitle: typeSummary(stats),
       color: category.color,
       cards: [{ key: category.id, label: category.title.toUpperCase(), color: category.color, items: category.items, stats }],
       isCategory: true,
       stats,
     };
   });
+}
+
+/**
+ * Keep only unfinished titles (unwatched or partly watched), dropping cards and sections left
+ * empty. Stats stay those of the whole section, so percentages don't change with the filter.
+ */
+export function unfinishedOnly(sections: TrackerSection[], watched: WatchedMap): TrackerSection[] {
+  return sections
+    .map((section) => ({
+      ...section,
+      cards: section.cards
+        .map((card) => ({ ...card, items: card.items.filter((item) => !isItemComplete(item, watched)) }))
+        .filter((card) => card.items.length > 0),
+    }))
+    .filter((section) => section.cards.length > 0);
+}
+
+export interface SearchResult {
+  item: McuItem;
+  /** Phase / category accent */
+  color: string;
+}
+
+/**
+ * Titles matching `query` (case-insensitive) across both views, in tracker order. A show matches
+ * on its title or any episode title; each matching season is its own result.
+ */
+export function searchItems(phases: Phase[], categories: ExpandedCategory[], query: string): SearchResult[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const seen = new Set<string>();
+  const out: SearchResult[] = [];
+  for (const group of [...phases, ...categories]) {
+    for (const item of group.items) {
+      if (seen.has(item.globalId)) continue;
+      const hit =
+        item.title.toLowerCase().includes(q) ||
+        (item.type === 'tv' && item.episodes.some((e) => e.title.toLowerCase().includes(q)));
+      if (hit) {
+        seen.add(item.globalId);
+        out.push({ item, color: groupColor(group) });
+      }
+    }
+  }
+  return out;
 }
 
 /** Sections (and phase cards) start expanded when they still have something unwatched. */
@@ -73,7 +125,7 @@ export function defaultExpanded(sections: TrackerSection[]): Record<string, bool
   return out;
 }
 
-/** Find an item (movie, special or TV season) by its `id`, with the color of the phase/category it's in. */
+/** Find an item (movie, special or TV season) by its `id`, with the color its posters use (saga or category). */
 export function findItem(
   phases: Phase[],
   categories: ExpandedCategory[],
@@ -82,7 +134,7 @@ export function findItem(
   for (const group of [...phases, ...categories]) {
     // Match globalId too: it's one per season and doesn't change when the season is renumbered.
     const item = group.items.find((i) => i.globalId === id || i.id === id);
-    if (item) return { item, color: group.color };
+    if (item) return { item, color: groupColor(group) };
   }
   return null;
 }

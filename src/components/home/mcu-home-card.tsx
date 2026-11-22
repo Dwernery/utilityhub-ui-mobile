@@ -8,7 +8,6 @@ import { useMcuTrackerData } from '@/lib/mcu/hooks';
 import type { WatchStats } from '@/lib/mcu/types';
 import { BREAKDOWN } from '@/lib/mcu/utils/constants';
 import { getInProgress } from '@/lib/mcu/utils/inProgress';
-import { normalizeTrackerData } from '@/lib/mcu/utils/normalizeTrackerData';
 import { combineStats, computeStats } from '@/lib/mcu/utils/stats';
 
 import { CardDivider, CardError, CardSkeleton, EmptyLine, MetricRow, ProgressItemRow, SectionLabel } from './parts';
@@ -17,10 +16,9 @@ const breakdownMetrics = (stats: WatchStats) =>
   BREAKDOWN.map(({ key, doneKey, label, icon }) => ({ value: `${stats[doneKey]}/${stats[key]}`, label, icon }));
 
 export function McuHomeCard({ style }: { style?: StyleProp<ViewStyle> }) {
-  const { watched } = useMcuTracker();
+  const { watched, phases, expandedCategories } = useMcuTracker();
   const { data, isPending, isError, error, refetch } = useMcuTrackerData();
 
-  const { phases, expandedCategories } = useMemo(() => normalizeTrackerData(data), [data]);
   const mcuStats = useMemo(() => combineStats(phases.map((p) => computeStats(p.items, watched))), [phases, watched]);
   const expandedStats = useMemo(
     () => combineStats(expandedCategories.map((c) => computeStats(c.items, watched))),

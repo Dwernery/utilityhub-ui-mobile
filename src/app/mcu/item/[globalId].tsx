@@ -14,17 +14,14 @@ import { useToast } from '@/context/toast';
 import { haptics } from '@/lib/haptics';
 import { useMcuTracker } from '@/lib/mcu/context';
 import { useDeleteEpisode, useDeleteMcuItem, useMcuTrackerData } from '@/lib/mcu/hooks';
-import { parseGlobalId } from '@/lib/mcu/utils/editing';
 import type { Episode, McuItem, MovieItem, TvItem, WatchStatus } from '@/lib/mcu/types';
 import { useChangeStatus } from '@/lib/mcu/useChangeStatus';
-import { MODAL_LABELS, MODAL_TITLE, STATUS_LABELS, TYPE_META } from '@/lib/mcu/utils/constants';
-import { normalizeTrackerData } from '@/lib/mcu/utils/normalizeTrackerData';
+import { MODAL_LABELS, STATUS_LABELS, STATUS_MENU_ORDER, TYPE_META, WATCH_STATUSES } from '@/lib/mcu/utils/constants';
 import { findItem } from '@/lib/mcu/utils/sections';
-import { getStatus, nextStatus } from '@/lib/mcu/utils/stats';
+import { formatRuntime, getStatus, toggleWatched } from '@/lib/mcu/utils/stats';
 import { LoadError } from '@/components/ui/load-error';
 import { SkeletonCard, SkeletonTheme } from '@/components/ui/skeleton';
 
-const STATUSES: WatchStatus[] = ['UNWATCHED', 'IN_PROGRESS', 'WATCHED'];
 
 function Panel({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -39,10 +36,8 @@ function Panel({ label, children }: { label: string; children: React.ReactNode }
 export default function McuItemDetail() {
   const { globalId } = useLocalSearchParams<{ globalId: string }>();
   const { data, isError, error, refetch } = useMcuTrackerData();
-  const found = useMemo(() => {
-    const { phases, expandedCategories } = normalizeTrackerData(data);
-    return findItem(phases, expandedCategories, globalId);
-  }, [data, globalId]);
+  const { phases, expandedCategories } = useMcuTracker();
+  const found = useMemo(() => findItem(phases, expandedCategories, globalId), [phases, expandedCategories, globalId]);
 
   if (!found) {
     return (
@@ -68,7 +63,7 @@ export default function McuItemDetail() {
   return (
     <>
       {/* The hero already shows title/type/year; the sheet's light glass header would mute a title on this dark sheet. */}
-      <Stack.Screen options={{ title: MODAL_TITLE[item.type === 'tv' ? 'tv' : 'movie'], headerTitle: '' }} />
+      <Stack.Screen options={{ headerTitle: '' }} />
       <SheetCloseButton />
       <ItemMenu item={item} />
       <ScreenScrollView
@@ -90,7 +85,6 @@ function ItemMenu({ item }: { item: McuItem }) {
   const addToast = useToast();
   const isTv = item.type === 'tv';
   const label = isTv ? `${item.title} Season ${item.seasonNumber}` : item.title;
-  const showId = isTv ? parseGlobalId(item.globalId)?.id : undefined;
 
   const confirmDelete = () => {
     const count = isTv ? item.episodes.length : 0;
@@ -103,7 +97,7 @@ function ItemMenu({ item }: { item: McuItem }) {
           text: 'Delete',
           style: 'destructive',
           onPress: () =>
-            remove.mutate(item.globalId, {
+            remove.mutate({ kind: isTv ? 'show' : 'movie', id: item.recordId }, {
               onSuccess: () => {
                 haptics.success();
                 addToast(`Deleted ${label}`, 'success');
@@ -124,10 +118,10 @@ function ItemMenu({ item }: { item: McuItem }) {
           onPress={() => router.push({ pathname: '/mcu/edit/item', params: { globalId: item.globalId } })}>
           Edit
         </Stack.Toolbar.MenuAction>
-        {isTv && showId ? (
+        {isTv ? (
           <Stack.Toolbar.MenuAction
             icon="plus"
-            onPress={() => router.push({ pathname: '/mcu/edit/episode', params: { showId: String(showId) } })}>
+            onPress={() => router.push({ pathname: '/mcu/edit/episode', params: { showId: String(item.recordId) } })}>
             Add Episode
           </Stack.Toolbar.MenuAction>
         ) : null}
@@ -161,13 +155,15 @@ function Hero({ item, color }: { item: McuItem; color: string }) {
         <Text style={[type.title3, styles.light]} selectable>
           {item.title}
         </Text>
-        <Text style={[type.subheadline, styles.muted]}>
-          {item.type === 'tv' ? `${MODAL_LABELS.SEASON} ${item.seasonNumber}` : item.premiereDate || ''}
+        <Text style={[type.subheadline, tabularNums, styles.muted]}>
+          {[item.type === 'tv' ? `${MODAL_LABELS.SEASON} ${item.seasonNumber}` : null, item.premiereDate || null]
+            .filter(Boolean)
+            .join(' · ')}
         </Text>
         {runtime > 0 && (
           <View style={styles.runtime}>
             <Text style={[type.caption1, styles.muted]}>{item.type === 'tv' ? 'Total Runtime' : 'Runtime'}</Text>
-            <Text style={[type.subheadline, tabularNums, styles.light, { fontWeight: '600' }]}>{runtime} min</Text>
+            <Text style={[type.subheadline, tabularNums, styles.light, { fontWeight: '600' }]}>{formatRuntime(runtime)}</Text>
           </View>
         )}
       </View>
@@ -196,13 +192,13 @@ function MovieBody({ item, color }: { item: MovieItem; color: string }) {
       <Synopsis text={item.synopsis} />
       <Panel label="Status">
         <SegmentedControl
-          values={STATUSES.map((s) => STATUS_LABELS[s])}
-          selectedIndex={STATUSES.indexOf(current)}
+          values={WATCH_STATUSES.map((s) => STATUS_LABELS[s])}
+          selectedIndex={WATCH_STATUSES.indexOf(current)}
           enabled={!isPending}
           appearance="dark"
           tintColor={color}
           onChange={(e) => {
-            const next = STATUSES[e.nativeEvent.selectedSegmentIndex];
+            const next = WATCH_STATUSES[e.nativeEvent.selectedSegmentIndex];
             if (!next || next === current) return;
             haptics.tap();
             change(item.id, next);
@@ -233,27 +229,33 @@ function SeasonBody({ item, color }: { item: TvItem; color: string }) {
   const { change, isPending, pendingId } = useChangeStatus();
   const removeEpisode = useDeleteEpisode();
   const addToast = useToast();
-  const showId = parseGlobalId(item.globalId)?.id;
+  const showId = item.recordId;
 
-  const addEpisode = () =>
-    showId && router.push({ pathname: '/mcu/edit/episode', params: { showId: String(showId) } });
+  const addEpisode = () => router.push({ pathname: '/mcu/edit/episode', params: { showId: String(showId) } });
 
-  // Long press: Edit / Delete. A plain tap still cycles the watch status.
+  // Long press: the other statuses, then Edit / Delete. A plain tap toggles watched.
   const episodeActions = (ep: Episode) => {
-    const episodeId = parseGlobalId(ep.globalId)?.id;
-    if (!showId || !episodeId) return;
+    const episodeId = ep.id;
+    const current = getStatus(watched, ep.globalId);
+    const statuses = STATUS_MENU_ORDER.filter((st) => st !== current);
+    const options = [...statuses.map((st) => `Mark ${STATUS_LABELS[st]}`), 'Edit Episode', 'Delete Episode', 'Cancel'];
+    const editIndex = statuses.length;
+    const deleteIndex = statuses.length + 1;
     haptics.tap();
     ActionSheetIOS.showActionSheetWithOptions(
       {
         title: `${ep.episodeNumber}. ${ep.title}`,
-        options: ['Edit Episode', 'Delete Episode', 'Cancel'],
-        destructiveButtonIndex: 1,
-        cancelButtonIndex: 2,
+        message: `Currently ${STATUS_LABELS[current].toLowerCase()}`,
+        options,
+        destructiveButtonIndex: deleteIndex,
+        cancelButtonIndex: options.length - 1,
       },
       (index) => {
-        if (index === 0) {
+        if (index < statuses.length) {
+          change(ep.globalId, statuses[index], { episode: true });
+        } else if (index === editIndex) {
           router.push({ pathname: '/mcu/edit/episode', params: { showId: String(showId), episodeId: String(episodeId) } });
-        } else if (index === 1) {
+        } else if (index === deleteIndex) {
           Alert.alert(`Delete episode ${ep.episodeNumber}?`, `"${ep.title}" will be removed. This can't be undone.`, [
             { text: 'Cancel', style: 'cancel' },
             {
@@ -274,7 +276,7 @@ function SeasonBody({ item, color }: { item: TvItem; color: string }) {
 
   const cycle = (ep: Episode) => {
     haptics.tap();
-    change(ep.globalId, nextStatus(getStatus(watched, ep.globalId)), { episode: true });
+    change(ep.globalId, toggleWatched(getStatus(watched, ep.globalId)), { episode: true });
   };
 
   return (
@@ -293,7 +295,7 @@ function SeasonBody({ item, color }: { item: TvItem; color: string }) {
       <Panel label="Episodes">
         <View style={styles.episodes}>
           {item.episodes.length === 0 && (
-            <Text style={[type.subheadline, styles.muted, { paddingVertical: 6 }]}>No episodes yet.</Text>
+            <Text style={[type.subheadline, styles.muted, { paddingVertical: 6 }]}>No episodes yet. Add them one at a time.</Text>
           )}
           {item.episodes.map((ep, i) => {
             const status = getStatus(watched, ep.globalId);
@@ -306,8 +308,8 @@ function SeasonBody({ item, color }: { item: TvItem; color: string }) {
                 disabled={isPending}
                 accessibilityRole="button"
                 accessibilityLabel={`Episode ${ep.episodeNumber ?? i + 1}, ${ep.title}, ${STATUS_LABELS[status]}`}
-                accessibilityHint="Cycles unwatched, in progress, watched. Long press to edit or delete."
-                accessibilityActions={[{ name: 'longpress', label: 'Edit or delete' }]}
+                accessibilityHint="Toggles watched. Long press for in progress, edit or delete."
+                accessibilityActions={[{ name: 'longpress', label: 'More options' }]}
                 onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && episodeActions(ep)}
                 style={({ pressed }) => [styles.episode, pressed && styles.episodePressed, busy && { opacity: 0.5 }]}>
                 <EpisodeCheck status={status} color={color} />

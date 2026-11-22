@@ -2,6 +2,7 @@ import { useToast } from '@/context/toast';
 
 import { useUpdateContentStatus } from './hooks';
 import type { WatchStatus } from './types';
+import { STATUS_LABELS } from './utils/constants';
 
 /**
  * Change the watch status of a movie/special/episode: PUT to the API, then toast.
@@ -16,7 +17,7 @@ export function useChangeStatus() {
     mutate(
       { globalId, status },
       {
-        onSuccess: () => addToast(`${episode ? 'Episode status' : 'Status'} updated to ${status}`, 'success'),
+        onSuccess: () => addToast(`${episode ? 'Episode marked' : 'Marked'} ${STATUS_LABELS[status]}`, 'success'),
         onError: () =>
           addToast(`Failed to update ${episode ? 'episode ' : ''}status. Please try again.`, 'error'),
       },

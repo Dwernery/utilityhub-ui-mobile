@@ -10,21 +10,14 @@ export const TYPE_META: Record<ItemType, { icon: SFSymbol; label: string }> = {
   tv: { icon: 'tv', label: 'Series' },
 };
 
-export const STATUS = {
-  UNWATCHED: 'UNWATCHED',
-  IN_PROGRESS: 'IN_PROGRESS',
-  WATCHED: 'WATCHED',
-} as const satisfies Record<WatchStatus, WatchStatus>;
+/** Left-to-right progression (status pickers). Menus list them reversed: most likely first. */
+export const WATCH_STATUSES: WatchStatus[] = ['UNWATCHED', 'IN_PROGRESS', 'WATCHED'];
+export const STATUS_MENU_ORDER: WatchStatus[] = [...WATCH_STATUSES].reverse();
 
 export const STATUS_LABELS: Record<WatchStatus, string> = {
   UNWATCHED: 'Unwatched',
   IN_PROGRESS: 'In Progress',
   WATCHED: 'Watched',
-};
-
-export const MODAL_TITLE = {
-  movie: 'Movie Details',
-  tv: 'Series Details',
 };
 
 export const MODAL_LABELS = {
@@ -48,7 +41,13 @@ export const BREAKDOWN: { key: keyof WatchStats; doneKey: keyof WatchStats; labe
   { key: 'episodes', doneKey: 'episodesDone', label: 'Episodes', icon: 'tv' },
 ];
 
-export const SAGAS = [
+/**
+ * The MCU Phases view, in order. A saga with no phases in the data yet is hidden, so the
+ * Mutant Saga appears once Phase 7 content is added. Its phase numbers are a guess; leave
+ * `years` out until they're known.
+ */
+export const SAGAS: { id: string; title: string; years?: string; color: string; phaseNums: number[] }[] = [
   { id: 'infinity', title: 'The Infinity Saga', years: '2008–2019', color: '#4C8DFF', phaseNums: [1, 2, 3] },
   { id: 'multiverse', title: 'The Multiverse Saga', years: '2021–2027', color: '#8B7CF6', phaseNums: [4, 5, 6] },
+  { id: 'mutant', title: 'The Mutant Saga', color: '#2DD4BF', phaseNums: [7, 8, 9] },
 ];

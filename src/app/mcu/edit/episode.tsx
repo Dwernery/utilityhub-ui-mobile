@@ -26,7 +26,7 @@ export default function EpisodeSheet() {
   const { data } = useMcuTrackerData();
   const raw = showId ? findRaw(data, `show:${showId}`) : null;
   const season = raw?.kind === 'show' ? raw : null;
-  const episode = episodeId ? season?.episodes.find((e) => e.id === episodeId) : undefined;
+  const episode = episodeId ? season?.show.episodes.find((e) => e.id === episodeId) : undefined;
 
   if (!season || !showId || (episodeId && !episode)) {
     return (
@@ -46,9 +46,9 @@ export default function EpisodeSheet() {
     <EpisodeForm
       key={episode?.id ?? 'new'}
       showId={showId}
-      subtitle={`${season.show.title} · Season ${season.seasonNumber}`}
+      subtitle={`${season.show.title} · Season ${season.show.seasonNumber}`}
       episode={episode}
-      nextNumber={nextEpisodeNumber(season.episodes)}
+      nextNumber={nextEpisodeNumber(season.show.episodes)}
     />
   );
 }

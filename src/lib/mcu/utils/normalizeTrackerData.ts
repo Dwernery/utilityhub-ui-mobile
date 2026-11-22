@@ -11,40 +11,39 @@ import type {
 } from '../types';
 import { compareIsoDates } from '@/lib/dates';
 
-// The API doesn't send colors, so every phase and expanded-universe category uses these.
-const PHASE_COLOR = '#4C8DFF';
-const EXPANDED_CATEGORY_COLOR = '#B91C1C';
+import { assignCategoryColors } from './categoryColors';
+
+// The API doesn't send colors. Phases show their saga's color; categories get one each (categoryColors.ts).
 
 /** Pre-normalization item: premiereDate is still the raw API date string. */
 type RawItem<T extends McuItem> = Omit<T, 'premiereDate'> & { premiereDate?: string };
 
-function normalizeShow(source: ApiShow): RawItem<TvItem>[] {
-  const id = source.globalId;
-  return (source.seasons ?? []).map((season, seasonIndex) => {
-    // Use seasonNumber from API if available, otherwise index + 1
-    const seasonNumber = season.seasonNumber ?? seasonIndex + 1;
-    return {
-      id: `${id}-season${seasonNumber}`,
-      globalId: id,
-      type: 'tv',
-      title: source.title,
-      seasonNumber,
-      premiereDate: source.premiereDate,
-      synopsis: source.synopsis,
-      s3Url: source.s3Url,
-      episodes: (season.episodes ?? []).map((episode) => ({
-        title: episode.title,
-        globalId: episode.globalId,
-        episodeNumber: episode.episodeNumber,
-        runtime: episode.runtime,
-      })),
-    };
-  });
+/** Each show record is one season. */
+function normalizeShow(source: ApiShow): RawItem<TvItem> {
+  return {
+    id: `${source.globalId}-season${source.seasonNumber}`,
+    recordId: source.id,
+    globalId: source.globalId,
+    type: 'tv',
+    title: source.title,
+    seasonNumber: source.seasonNumber,
+    premiereDate: source.premiereDate,
+    synopsis: source.synopsis,
+    s3Url: source.s3Url,
+    episodes: (source.episodes ?? []).map((episode) => ({
+      id: episode.id,
+      title: episode.title,
+      globalId: episode.globalId,
+      episodeNumber: episode.episodeNumber,
+      runtime: episode.runtime,
+    })),
+  };
 }
 
 function normalizeMovie(source: ApiMovie): RawItem<MovieItem> {
   return {
     id: source.globalId,
+    recordId: source.id,
     globalId: source.globalId,
     type: source.type === 'SPECIAL' ? 'special' : 'movie',
     title: source.title,
@@ -59,11 +58,11 @@ function normalizeMovie(source: ApiMovie): RawItem<MovieItem> {
 function extractDomainItems(domain: ApiDomain | undefined): McuItem[] {
   const items: RawItem<McuItem>[] = [
     ...(domain?.movies ?? []).map(normalizeMovie),
-    // One item per season for TV
-    ...(domain?.shows ?? []).flatMap(normalizeShow),
+    ...(domain?.shows ?? []).map(normalizeShow),
   ];
 
-  items.sort((a, b) => compareIsoDates(a.premiereDate ?? '', b.premiereDate ?? ''));
+  // Undated items go last, like the API's own order.
+  items.sort((a, b) => compareIsoDates(a.premiereDate || '9999', b.premiereDate || '9999'));
 
   return items.map(
     // premiereDate is a calendar date ("YYYY-MM-DD"); read the year from the string so the
@@ -87,7 +86,7 @@ export function normalizeTrackerData(apiData: McuTrackerResponse | null | undefi
     const phaseNumber = phaseMatch ? parseInt(phaseMatch[1], 10) : null;
 
     if (phaseNumber) {
-      phaseMap[phaseNumber] ??= { num: phaseNumber, color: PHASE_COLOR, items: [] };
+      phaseMap[phaseNumber] ??= { num: phaseNumber, items: [] };
       phaseMap[phaseNumber].items.push(...extractDomainItems(domain));
     } else {
       expandedDomains.push(domain);
@@ -96,10 +95,12 @@ export function normalizeTrackerData(apiData: McuTrackerResponse | null | undefi
 
   const phases = Object.values(phaseMap).sort((a, b) => a.num - b.num);
 
-  const expandedCategories = expandedDomains.map((domain) => ({
+  const titles = expandedDomains.map((domain) => domain.domainName || 'Unknown');
+  const colors = assignCategoryColors(titles);
+  const expandedCategories = expandedDomains.map((domain, i) => ({
     id: domain.domainName?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
-    title: domain.domainName || 'Unknown',
-    color: EXPANDED_CATEGORY_COLOR,
+    title: titles[i],
+    color: colors[titles[i]],
     items: extractDomainItems(domain),
   }));
 

@@ -1,28 +1,37 @@
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 
-import { SagaSectionView, TrackerOverview } from '@/components/mcu/tracker-parts';
+import { PosterGrid, SagaSectionView, TrackerOverview } from '@/components/mcu/tracker-parts';
+import { LoadError } from '@/components/ui/load-error';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
-import { mcuColors, spacing, type } from '@/constants/theme';
+import { accentHex, accents, mcuColors, spacing, tabularNums, type } from '@/constants/theme';
+import { haptics } from '@/lib/haptics';
 import { useMcuTracker } from '@/lib/mcu/context';
 import { useMcuTrackerData } from '@/lib/mcu/hooks';
-import type { McuItem } from '@/lib/mcu/types';
+import type { McuItem, WatchStatus } from '@/lib/mcu/types';
 import { useChangeStatus } from '@/lib/mcu/useChangeStatus';
 import type { TrackerView } from '@/lib/mcu/utils/constants';
 import type { DraftKind } from '@/lib/mcu/utils/editing';
-import { normalizeTrackerData } from '@/lib/mcu/utils/normalizeTrackerData';
-import { categorySections, defaultExpanded, sagaSections } from '@/lib/mcu/utils/sections';
+import { categorySections, defaultExpanded, sagaSections, searchItems, unfinishedOnly } from '@/lib/mcu/utils/sections';
 import { Skeleton, SkeletonCard, SkeletonSurface, SkeletonTheme, SkeletonTiles } from '@/components/ui/skeleton';
-import { combineStats, nextStatus } from '@/lib/mcu/utils/stats';
+import { combineStats } from '@/lib/mcu/utils/stats';
 
 const isView = (v: unknown): v is TrackerView => v === 'phases' || v === 'categories';
+
+type Filter = 'all' | 'unfinished';
+const FILTERS: { value: Filter; label: string }[] = [
+  { value: 'all', label: 'All Titles' },
+  { value: 'unfinished', label: 'Not Finished' },
+];
 
 export default function Tracker() {
   const params = useLocalSearchParams<{ view?: string }>();
   const { view, setView } = useMcuTracker();
-  const { data, isPending, isError, refetch, isRefetching } = useMcuTrackerData();
+  const { isPending, isError, error, refetch, isRefetching } = useMcuTrackerData();
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
 
   // `?view=` deep links pick the initial view (web parity); the param then follows the toggle.
   useEffect(() => {
@@ -49,7 +58,34 @@ export default function Tracker() {
 
   return (
     <>
+      <Stack.SearchBar
+        placeholder="Search titles and episodes"
+        onChangeText={(e) => setSearch(e.nativeEvent.text)}
+        onCancelButtonPress={() => setSearch('')}
+        hideWhenScrolling={false}
+        textColor={mcuColors.label}
+        tintColor={accents.mcu}
+      />
       <Stack.Toolbar placement="right">
+        {/* Off while searching: results always include every match, like the view switch. */}
+        <Stack.Toolbar.Menu
+          disabled={search.trim() !== ''}
+          icon={filter === 'all' ? 'line.3.horizontal.decrease.circle' : 'line.3.horizontal.decrease.circle.fill'}
+          accessibilityLabel={`Filter, ${FILTERS.find((f) => f.value === filter)!.label}`}>
+          <Stack.Toolbar.Menu inline title="Show">
+            {FILTERS.map((f) => (
+              <Stack.Toolbar.MenuAction
+                key={f.value}
+                isOn={filter === f.value}
+                onPress={() => {
+                  haptics.selection();
+                  setFilter(f.value);
+                }}>
+                {f.label}
+              </Stack.Toolbar.MenuAction>
+            ))}
+          </Stack.Toolbar.Menu>
+        </Stack.Toolbar.Menu>
         <Stack.Toolbar.Menu icon="plus" accessibilityLabel="Add">
           <Stack.Toolbar.MenuAction icon="film" onPress={() => add('movie')}>
             Movie
@@ -66,6 +102,7 @@ export default function Tracker() {
         grouped={false}
         style={styles.screen}
         contentContainerStyle={styles.content}
+        keyboardDismissMode="on-drag"
         indicatorStyle="white"
         refreshControl={<RefreshControl tintColor={mcuColors.secondaryLabel} refreshing={isRefetching} onRefresh={() => void refetch()} />}>
         {isPending ? (
@@ -83,29 +120,24 @@ export default function Tracker() {
             </View>
           </SkeletonTheme>
         ) : isError ? (
-          <View style={styles.state}>
-            <Text style={[type.subheadline, { color: '#f87171' }]}>Failed to load MCU tracker data.</Text>
-            <Pressable onPress={() => refetch()} accessibilityRole="button">
-              <Text style={[type.headline, { color: mcuColors.label }]}>Retry</Text>
-            </Pressable>
-          </View>
+          <LoadError what="the MCU tracker" error={error} onRetry={() => refetch()} tint={accentHex.mcu} dark />
         ) : (
           // Mounts once data exists, so its default expansion is computed exactly once.
-          <TrackerBody data={data} view={view} onChangeView={changeView} />
+          <TrackerBody view={view} onChangeView={changeView} search={search} filter={filter} />
         )}
       </ScreenScrollView>
     </>
   );
 }
 
-function TrackerBody({ data, view, onChangeView }: {
-  data: ReturnType<typeof useMcuTrackerData>['data'];
+function TrackerBody({ view, onChangeView, search, filter }: {
   view: TrackerView;
   onChangeView: (v: TrackerView) => void;
+  search: string;
+  filter: Filter;
 }) {
-  const { watched } = useMcuTracker();
+  const { watched, phases, expandedCategories } = useMcuTracker();
   const { change } = useChangeStatus();
-  const { phases, expandedCategories } = useMemo(() => normalizeTrackerData(data), [data]);
 
   const sagas = useMemo(() => sagaSections(phases, watched), [phases, watched]);
   const categories = useMemo(() => categorySections(expandedCategories, watched), [expandedCategories, watched]);
@@ -117,25 +149,53 @@ function TrackerBody({ data, view, onChangeView }: {
   const [expanded, setExpanded] = useState(() => ({ ...defaultExpanded(sagas), ...defaultExpanded(categories) }));
   const toggle = (key: string) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  const onToggleItem = (item: McuItem) => change(item.id, nextStatus(watched[item.id]));
+  const onChangeStatus = (item: McuItem, status: WatchStatus) => change(item.id, status);
   const onSelectItem = (item: McuItem) => router.push({ pathname: '/mcu/item/[globalId]', params: { globalId: item.globalId } });
+
+  // Search spans both views, so a show isn't "missing" because it's in the other one.
+  const results = useMemo(
+    () => searchItems(phases, expandedCategories, search),
+    [phases, expandedCategories, search],
+  );
+  const shown = useMemo(
+    () => (filter === 'unfinished' ? unfinishedOnly(sections, watched) : sections),
+    [filter, sections, watched],
+  );
+
+  if (search.trim()) {
+    return (
+      <>
+        <TrackerOverview view={view} onChangeView={onChangeView} stats={overall} viewSwitchDisabled />
+        <Text style={[type.footnote, tabularNums, styles.count]}>
+          {results.length} {results.length === 1 ? 'result' : 'results'}
+        </Text>
+        {results.length > 0 ? (
+          <PosterGrid results={results} watched={watched} onChangeStatus={onChangeStatus} onSelectItem={onSelectItem} />
+        ) : (
+          <Text style={[type.subheadline, styles.empty]}>No titles match “{search.trim()}”.</Text>
+        )}
+      </>
+    );
+  }
 
   return (
     <>
       <TrackerOverview view={view} onChangeView={onChangeView} stats={overall} />
-      {sections.map((section) => (
+      {shown.map((section) => (
         <SagaSectionView
           key={section.key}
           section={section}
           expanded={expanded}
           onToggle={toggle}
           watched={watched}
-          onToggleItem={onToggleItem}
+          onChangeStatus={onChangeStatus}
           onSelectItem={onSelectItem}
         />
       ))}
-      {sections.length === 0 && (
-        <Text style={[type.subheadline, styles.empty]}>Nothing here yet.</Text>
+      {shown.length === 0 && (
+        <Text style={[type.subheadline, styles.empty]}>
+          {sections.length > 0 && filter === 'unfinished' ? 'All caught up. Everything here is watched.' : 'Nothing here yet.'}
+        </Text>
       )}
     </>
   );
@@ -144,8 +204,8 @@ function TrackerBody({ data, view, onChangeView }: {
 const styles = StyleSheet.create({
   screen: { backgroundColor: mcuColors.background },
   content: { paddingBottom: spacing.xxl },
-  state: { alignItems: 'center', gap: spacing.sm, paddingVertical: 64 },
   skeleton: { gap: spacing.md },
   posterSkeleton: { flexDirection: 'row', gap: 10, padding: spacing.md, overflow: 'hidden' },
+  count: { color: mcuColors.secondaryLabel, marginBottom: spacing.sm },
   empty: { color: mcuColors.secondaryLabel, textAlign: 'center', paddingVertical: 48 },
 });
