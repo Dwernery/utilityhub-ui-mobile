@@ -5,37 +5,32 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FormButtonRow, FormSection, FormTextField } from '@/components/ui/form';
 import { colors, spacing, type } from '@/constants/theme';
 import { useKeyboardInset } from '@/hooks/use-keyboard-inset';
-import { setApiToken } from '@/lib/apiToken';
 import { haptics } from '@/lib/haptics';
-import { checkApiToken } from '@/lib/http';
+import { login } from '@/lib/http';
 
 /**
- * Asks for the access token (the API_TOKEN set on the server). It is checked
- * against the API before being saved, so a typo gets a clear message.
- * Mirrors the web app's UnlockScreen.
+ * Password sign-in. The session it starts is kept in the Keychain behind Face ID /
+ * Touch ID, so after this the app only asks for your face or finger when it starts.
+ * Mirrors the web app's SignInScreen (which also offers Touch ID passkeys).
  */
-export function UnlockScreen() {
+export function SignInScreen() {
   const keyboardInset = useKeyboardInset();
-  const [token, setToken] = useState('');
+  const [password, setPassword] = useState('');
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const unlock = async () => {
-    const candidate = token.trim();
-    if (!candidate) {
-      setError('Enter your access token.');
+  const signIn = async () => {
+    if (!password) {
+      setError('Enter your password.');
       return;
     }
 
     setChecking(true);
     setError(null);
     try {
-      if ((await checkApiToken(candidate)) === 'valid') {
-        haptics.success();
-        await setApiToken(candidate); // the app replaces this screen
-        return;
-      }
-      setError("That token isn't right. Check it and try again.");
+      await login(password);
+      haptics.success(); // the app replaces this screen
+      return;
     } catch (err) {
       // fetch throws a TypeError when the server can't be reached at all.
       setError(
@@ -67,15 +62,15 @@ export function UnlockScreen() {
         <Text style={[type.title1, styles.title]} accessibilityRole="header">
           Project SHIELD
         </Text>
-        <Text style={[type.subheadline, styles.subtitle]}>Enter your access token to continue.</Text>
+        <Text style={[type.subheadline, styles.subtitle]}>Sign in to continue.</Text>
       </View>
 
-      <FormSection footer="It's the API_TOKEN from the server's .env. It's kept in this device's Keychain.">
+      <FormSection footer="After this, Face ID or Touch ID opens the app. You'll only need the password again if you sign out or don't use the app for 30 days.">
         <FormTextField
-          label="Token"
-          value={token}
-          onChangeText={setToken}
-          placeholder="Paste your token"
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Required"
           secureTextEntry
           textContentType="password"
           autoComplete="current-password"
@@ -83,7 +78,7 @@ export function UnlockScreen() {
           autoCorrect={false}
           spellCheck={false}
           returnKeyType="go"
-          onSubmitEditing={unlock}
+          onSubmitEditing={signIn}
           editable={!checking}
         />
       </FormSection>
@@ -95,7 +90,7 @@ export function UnlockScreen() {
       ) : null}
 
       <FormSection>
-        <FormButtonRow title={checking ? 'Checking…' : 'Unlock'} onPress={unlock} disabled={checking} />
+        <FormButtonRow title={checking ? 'Signing In…' : 'Sign In'} onPress={signIn} disabled={checking} />
       </FormSection>
     </ScrollView>
   );

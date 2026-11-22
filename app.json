@@ -41,7 +41,12 @@
           }
         }
       ],
-      "expo-secure-store"
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "Project SHIELD uses Face ID to unlock your saved sign-in."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

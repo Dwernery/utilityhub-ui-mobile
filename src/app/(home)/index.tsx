@@ -11,14 +11,14 @@ import { McuHomeCard } from '@/components/home/mcu-home-card';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { colors, spacing, type } from '@/constants/theme';
 import { useIsWide } from '@/hooks/use-is-wide';
-import { clearApiToken } from '@/lib/apiToken';
 import { haptics } from '@/lib/haptics';
+import { clearSession } from '@/lib/session';
 
-/** For a lost or shared device: forgets the token, so the app is locked until it is entered again. */
-function confirmLock() {
-  Alert.alert('Lock Project SHIELD?', "You'll need to enter the access token again to use the app on this device.", [
+/** Forgets this phone's session, so the app needs the password again. */
+function confirmSignOut() {
+  Alert.alert('Sign Out?', "You'll need your password to use Project SHIELD on this device again.", [
     { text: 'Cancel', style: 'cancel' },
-    { text: 'Lock', style: 'destructive', onPress: () => void clearApiToken() },
+    { text: 'Sign Out', style: 'destructive', onPress: () => void clearSession() },
   ]);
 }
 
@@ -40,7 +40,11 @@ export default function Home() {
   return (
     <>
       <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button icon="lock" accessibilityLabel="Lock this device" onPress={confirmLock} />
+        <Stack.Toolbar.Button
+          icon="rectangle.portrait.and.arrow.right"
+          accessibilityLabel="Sign out on this device"
+          onPress={confirmSignOut}
+        />
       </Stack.Toolbar>
       <ScreenScrollView
         contentContainerStyle={styles.content}

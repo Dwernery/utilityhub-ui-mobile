@@ -64,6 +64,7 @@ Bugs found and fixed: Add Book opened scrolled under the header (autoFocus); ful
 Not covered: typing (the iOS 27 simulator clipboard doesn't work, and the driver only supports taps), edit-book save, pickers, MCU and Finances interactions.
 
 ## Notes / deviations from the web app
+- Sign-in (2026-11-22): both apps sign in with the owner password. The web also offers Touch ID with a passkey and keeps the session in an HttpOnly cookie. The app keeps its session token in the Keychain behind Face ID / Touch ID instead, asked once per cold launch (not on return from the background), and has no passkey sign-in (that would need Associated Domains). Signing out on the phone only forgets the token; it stays valid on the server until it expires.
 - React Query now refetches stale data when the app returns to the foreground. The web app disabled `refetchOnWindowFocus`.
 - GET errors now include the HTTP status in the message.
 - MCU poster art is rendered with SVG gradient stops instead of CSS strings. The web's `rgb(...)FA` colors were invalid CSS, so its fallback art never showed; fixed on the web too (2026-11-22), where the art now also sits under the artwork instead of over it.

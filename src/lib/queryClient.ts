@@ -9,7 +9,7 @@ export const queryClient = new QueryClient({
       // Native has no window focus; focusManager below maps "focus" to the app returning to the foreground.
       refetchOnWindowFocus: true,
       staleTime: 30_000,
-      // One retry for blips, but never for a rejected token: the same token would just be rejected again.
+      // One retry for blips, but never for a rejected session: it would just be rejected again.
       retry: (failureCount, error) => !(error instanceof UnauthorizedError) && failureCount < 1,
     },
   },

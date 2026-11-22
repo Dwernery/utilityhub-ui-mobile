@@ -4,7 +4,7 @@ import { NativeTabs } from 'expo-router/native-tabs';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { TokenGate } from '@/components/auth/token-gate';
+import { AuthGate } from '@/components/auth/auth-gate';
 import { icons } from '@/constants/icons';
 import { ToastProvider } from '@/context/toast';
 import { McuTrackerProvider } from '@/lib/mcu/context';
@@ -23,7 +23,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
           {/* Everything that talks to the API sits inside the gate. */}
-          <TokenGate>
+          <AuthGate>
             <McuTrackerProvider>
               <NativeTabs minimizeBehavior="onScrollDown">
                 <NativeTabs.Trigger name="(home)">
@@ -44,7 +44,7 @@ export default function RootLayout() {
                 </NativeTabs.Trigger>
               </NativeTabs>
             </McuTrackerProvider>
-          </TokenGate>
+          </AuthGate>
         </ToastProvider>
       </QueryClientProvider>
     </ThemeProvider>

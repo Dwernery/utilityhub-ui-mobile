@@ -11,7 +11,7 @@ describe('query retries', () => {
     expect(retry(1, new Error('network'))).toBe(false);
   });
 
-  it('never retry a rejected token: the same token would just be rejected again', () => {
+  it('never retry a rejected session: it would just be rejected again', () => {
     expect(retry(0, new UnauthorizedError())).toBe(false);
   });
 });
