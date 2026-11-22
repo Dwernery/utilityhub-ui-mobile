@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeyboardInset } from '@/hooks/use-keyboard-inset';
@@ -10,17 +10,27 @@ import { FormControlRow, FormSection, FormTextField } from '@/components/ui/form
 import { SheetCloseButton } from '@/components/ui/sheet-close-button';
 import { accents, colors, spacing, type } from '@/constants/theme';
 import { useToast } from '@/context/toast';
-import { useTransactions, useUpdateTransaction } from '@/lib/finance/hooks';
-import type { Transaction } from '@/lib/finance/types';
+import { haptics } from '@/lib/haptics';
+import { useCreateTransaction, useDeleteTransaction, useTransactions, useUpdateTransaction } from '@/lib/finance/hooks';
+import type { Transaction, TransactionType } from '@/lib/finance/types';
 import { parseMoney } from '@/lib/finance/utils/currency';
 import { parseIdParam } from '@/lib/routeParams';
 
-/** Edit a transaction's name, amount and paid flag (the web's inline edit form). */
-export default function EditTransaction() {
-  const id = parseIdParam(useLocalSearchParams<{ id: string }>().id);
+/**
+ * Add (`id = new`, with `type = INCOME | EXPENSE`) or edit/delete a transaction
+ * (the web's inline add and edit forms).
+ */
+export default function TransactionSheet() {
+  const params = useLocalSearchParams<{ id: string; type?: string }>();
   const { data: transactions = [] } = useTransactions();
-  const t = transactions.find((x) => x.id === id);
 
+  if (params.id === 'new') {
+    const kind: TransactionType = params.type === 'INCOME' ? 'INCOME' : 'EXPENSE';
+    return <AddForm kind={kind} />;
+  }
+
+  const id = parseIdParam(params.id);
+  const t = transactions.find((x) => x.id === id);
   if (!t) {
     return (
       <>
@@ -32,17 +42,92 @@ export default function EditTransaction() {
       </>
     );
   }
-  return <Form key={t.id} t={t} />;
+  return <EditForm key={t.id} t={t} />;
 }
 
-function Form({ t }: { t: Transaction }) {
+function FormScroll({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   const keyboardInset = useKeyboardInset();
+  return (
+    <ScrollView
+      style={styles.flex}
+      contentInsetAdjustmentBehavior="automatic"
+      contentInset={{ bottom: keyboardInset }}
+      scrollIndicatorInsets={{ bottom: keyboardInset }}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={[styles.content, { paddingLeft: spacing.lg + insets.left, paddingRight: spacing.lg + insets.right }]}>
+      {children}
+    </ScrollView>
+  );
+}
+
+const tintFor = (kind: TransactionType) => (kind === 'INCOME' ? colors.positive : colors.negative);
+
+function AddForm({ kind }: { kind: TransactionType }) {
+  const create = useCreateTransaction();
+  const addToast = useToast();
+  const [name, setName] = useState('');
+  const [amount, setAmount] = useState('');
+  const [cash, setCash] = useState(false);
+  const dirty = name !== '' || amount !== '' || cash;
+  const label = kind === 'INCOME' ? 'Income' : 'Expense';
+
+  const save = () => {
+    if (!name.trim()) return addToast('Please enter a name', 'error');
+    const parsed = parseMoney(amount);
+    if (!parsed.ok) return addToast(parsed.error, 'error');
+    create.mutate(
+      { name: name.trim(), transactionType: kind, amount: parsed.value, cash },
+      {
+        onSuccess: () => {
+          haptics.success();
+          addToast(`${label} added`, 'success');
+          router.back();
+        },
+        onError: (e) => addToast(e.message || `Failed to add ${label.toLowerCase()}`, 'error'),
+      },
+    );
+  };
+
+  return (
+    <>
+      <Stack.Screen options={{ title: `Add ${label}` }} />
+      <FormSheetToolbar dirty={dirty} busy={create.isPending} onSave={save} tint={accents.finances} />
+      <FormScroll>
+        <FormSection footer="Cash items count toward Net Cash Flow.">
+          <FormTextField
+            label="Name"
+            value={name}
+            onChangeText={setName}
+            placeholder={kind === 'INCOME' ? 'e.g. Salary' : 'e.g. Rent'}
+            maxLength={100}
+            editable={!create.isPending}
+          />
+          <FormTextField
+            label="Amount"
+            value={amount}
+            onChangeText={setAmount}
+            placeholder="0.00"
+            keyboardType="decimal-pad"
+            editable={!create.isPending}
+          />
+          <FormControlRow label="Cash">
+            <Switch value={cash} onValueChange={setCash} trackColor={{ true: tintFor(kind) as string }} disabled={create.isPending} />
+          </FormControlRow>
+        </FormSection>
+      </FormScroll>
+    </>
+  );
+}
+
+function EditForm({ t }: { t: Transaction }) {
   const update = useUpdateTransaction();
+  const remove = useDeleteTransaction();
   const addToast = useToast();
   const [name, setName] = useState(t.name);
   const [amount, setAmount] = useState(String(t.amount));
   const [paid, setPaid] = useState(!!t.paid);
+  const busy = update.isPending || remove.isPending;
   const dirty = name !== t.name || amount !== String(t.amount) || paid !== !!t.paid;
 
   const save = () => {
@@ -61,34 +146,45 @@ function Form({ t }: { t: Transaction }) {
     );
   };
 
-  const tint = t.transactionType === 'INCOME' ? colors.positive : colors.negative;
+  const onDelete = () =>
+    Alert.alert(`Delete ${t.name}?`, "This can't be undone.", [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () =>
+          remove.mutate(t.id, {
+            onSuccess: () => {
+              addToast(`${t.name} deleted`, 'success');
+              router.back();
+            },
+            onError: (e) => addToast(e.message || 'Failed to delete transaction', 'error'),
+          }),
+      },
+    ]);
+
+  const income = t.transactionType === 'INCOME';
 
   return (
     <>
-      <Stack.Screen options={{ title: t.transactionType === 'INCOME' ? 'Edit Income' : 'Edit Expense' }} />
-      <FormSheetToolbar dirty={dirty} busy={update.isPending} onSave={save} tint={accents.finances} />
-      <ScrollView
-        style={styles.flex}
-        contentInsetAdjustmentBehavior="automatic"
-        contentInset={{ bottom: keyboardInset }}
-        scrollIndicatorInsets={{ bottom: keyboardInset }}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, { paddingLeft: spacing.lg + insets.left, paddingRight: spacing.lg + insets.right }]}>
+      <Stack.Screen options={{ title: income ? 'Edit Income' : 'Edit Expense' }} />
+      <FormSheetToolbar
+        dirty={dirty}
+        busy={busy}
+        onSave={save}
+        tint={accents.finances}
+        onDelete={onDelete}
+        deleteLabel={income ? 'Delete income' : 'Delete expense'}
+      />
+      <FormScroll>
         <FormSection>
-          <FormTextField label="Name" value={name} onChangeText={setName} placeholder="Transaction name" editable={!update.isPending} />
-          <FormTextField
-            label="Amount"
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="0.00"
-            keyboardType="decimal-pad"
-            editable={!update.isPending}
-          />
+          <FormTextField label="Name" value={name} onChangeText={setName} placeholder="Transaction name" maxLength={100} editable={!busy} />
+          <FormTextField label="Amount" value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" editable={!busy} />
           <FormControlRow label="Paid">
-            <Switch value={paid} onValueChange={setPaid} trackColor={{ true: tint as string }} disabled={update.isPending} />
+            <Switch value={paid} onValueChange={setPaid} trackColor={{ true: tintFor(t.transactionType) as string }} disabled={busy} />
           </FormControlRow>
         </FormSection>
-      </ScrollView>
+      </FormScroll>
     </>
   );
 }

@@ -1,5 +1,5 @@
 import { requestJson, requestMaybeJson } from '../http';
-import type { Account, AccountCategory, IncomeSource, NetWorthEntry, Transaction } from './types';
+import type { Account, AccountCategory, IncomeSource, NetWorthEntry, Transaction, TransactionType } from './types';
 
 const BASE = '/api/finance';
 
@@ -58,6 +58,23 @@ export function createAccount({ accountName, accountType, category, initialBalan
 
 export function getTransactions() {
   return requestJson<Transaction[]>(`${BASE}/transactions`, { errorMessage: 'Failed to fetch transactions' });
+}
+
+export function createTransaction(body: { name: string; transactionType: TransactionType; amount: number; cash: boolean }) {
+  return requestJson<Transaction>(`${BASE}/transactions`, {
+    method: 'POST',
+    body,
+    errorMessage: 'Failed to create transaction',
+    includeErrorDetail: true,
+  });
+}
+
+export function deleteTransaction(id: number) {
+  return requestMaybeJson(`${BASE}/transactions/${id}`, {
+    method: 'DELETE',
+    errorMessage: 'Failed to delete transaction',
+    includeErrorDetail: true,
+  });
 }
 
 export function updateTransaction(id: number, name: string, amount: number, paid: boolean) {

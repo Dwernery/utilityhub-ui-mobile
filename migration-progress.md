@@ -84,7 +84,8 @@ Not covered: typing (the iOS 27 simulator clipboard doesn't work, and the driver
 - MCU: status changes go through one `useChangeStatus` hook (API → local `watched` → toast), shared by the poster badge and the detail sheet, the same order as the web.
 - MCU detail sheet: no header title. The hero shows title, type and year, and iOS's light glass header muted a title on the dark sheet.
 - MCU saga titles: dropped the web's text-shadow glow. On iOS it drew a dark box behind the text.
-- Finances: the web's "AI Assistant" tab (no route, 404) and the non-functional "+"/trash buttons on Income & Expenses (no create/delete transaction API) were left out.
+- Finances: the web's "AI Assistant" tab (no route, 404) was left out.
+- Finances Income & Expenses: add uses a "+" in each section header that opens the transaction sheet (`id=new&type=…`, with a Cash switch). Delete is the trash button in the edit sheet's toolbar. The web does both inline, with a form at the top of the column and a trash icon on each row.
 - Finances month sheet: no local copy of the month. Everything is derived from the net-worth query and refetched after each change. The web hand-patched a `displayMonth` copy, which could drift.
 - Finances: added a one-tap "paid" toggle on each transaction row. The web only had paid in the edit form.
 - MCU status bar: light only while the MCU tab is focused (`useFocusEffect` + `setStatusBarStyle`). A `<StatusBar style="light">` leaked into other tabs, because native tabs keep every tab mounted.

@@ -52,6 +52,10 @@ export const useUpdateTransaction = () =>
     [TRANSACTIONS_KEY],
   );
 
+export const useCreateTransaction = () => useInvalidating(api.createTransaction, [TRANSACTIONS_KEY]);
+
+export const useDeleteTransaction = () => useInvalidating((id: number) => api.deleteTransaction(id), [TRANSACTIONS_KEY]);
+
 export const useClearAllPaid = () => useInvalidating(() => api.clearAllPaid(), [TRANSACTIONS_KEY]);
 
 export const useSaveIncomeSource = () =>

@@ -41,7 +41,7 @@ function TransactionRow({ t, first, onTogglePaid, busy }: { t: Transaction; firs
       onPress={() => router.push({ pathname: '/finances/transaction/[id]', params: { id: String(t.id) } })}
       accessibilityRole="button"
       accessibilityLabel={`${t.name}, ${fmt(t.amount)}${t.paid ? ', paid' : ''}`}
-      accessibilityHint="Edit transaction"
+      accessibilityHint="Edit or delete"
       style={({ pressed }) => [styles.row, !first && styles.rowBorder, pressed && { backgroundColor: colors.fill }]}>
       <Pressable
         onPress={onTogglePaid}
@@ -179,13 +179,24 @@ export default function IncomeExpenses() {
                         size={14}
                         tintColor={income ? colors.positive : colors.negative}
                       />
-                      <Text style={[styles.sectionTitle, { color: income ? colors.positive : colors.negative }]}>
+                      <Text style={[styles.sectionTitle, { color: income ? colors.positive : colors.negative, flex: 1 }]}>
                         {income ? 'INCOME' : 'EXPENSES'}
                       </Text>
+                      <Pressable
+                        onPress={() => {
+                          haptics.tap();
+                          router.push({ pathname: '/finances/transaction/[id]', params: { id: 'new', type: dir } });
+                        }}
+                        hitSlop={10}
+                        accessibilityRole="button"
+                        accessibilityLabel={income ? 'Add income' : 'Add expense'}
+                        style={({ pressed }) => [styles.addButton, pressed && { opacity: 0.6 }]}>
+                        <SymbolView name="plus.circle.fill" size={20} tintColor={income ? colors.positive : colors.negative} />
+                      </Pressable>
                     </View>
                     <View style={styles.group}>
                       {list.length === 0 ? (
-                        <Text style={[type.subheadline, styles.empty]}>None</Text>
+                        <Text style={[type.subheadline, styles.empty]}>None yet. Tap + to add one.</Text>
                       ) : (
                         list.map((t, i) => (
                           <TransactionRow
@@ -221,6 +232,7 @@ const styles = StyleSheet.create({
   tileLabel: { color: financeSurfaces.onTile.secondary, fontSize: 10, fontWeight: '600', letterSpacing: 0.6 },
   tileValue: { color: financeSurfaces.onTile.primary, fontSize: 20, fontWeight: '700' },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.xs },
+  addButton: { padding: 2 },
   sectionTitle: { fontSize: 13, fontWeight: '700', letterSpacing: 0.8 },
   group: { borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: colors.secondaryGroupedBackground },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
