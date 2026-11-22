@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-import { detailSheet, largeTitleScreen } from '@/constants/navigation';
+import { detailSheet, formSheet, largeTitleScreen } from '@/constants/navigation';
 import { accents, mcuColors } from '@/constants/theme';
 
 export { RouteError as ErrorBoundary } from '@/components/route-error';
@@ -24,6 +24,9 @@ export default function McuLayout() {
         name="item/[globalId]"
         options={{ ...detailSheet, contentStyle: { backgroundColor: mcuColors.surface } }}
       />
+      {/* Add/edit forms use the system's grouped-form look, not the always-dark tracker. */}
+      <Stack.Screen name="edit/item" options={formSheet} />
+      <Stack.Screen name="edit/episode" options={formSheet} />
     </Stack>
   );
 }

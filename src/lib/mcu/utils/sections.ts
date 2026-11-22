@@ -80,7 +80,8 @@ export function findItem(
   id: string,
 ): { item: McuItem; color: string } | null {
   for (const group of [...phases, ...categories]) {
-    const item = group.items.find((i) => i.id === id);
+    // Match globalId too: it's one per season and doesn't change when the season is renumbered.
+    const item = group.items.find((i) => i.globalId === id || i.id === id);
     if (item) return { item, color: group.color };
   }
   return null;

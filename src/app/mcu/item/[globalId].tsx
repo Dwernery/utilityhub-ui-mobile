@@ -1,8 +1,8 @@
 import { SegmentedControl } from '@expo/ui/community/segmented-control';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActionSheetIOS, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PosterThumb } from '@/components/mcu/poster-card';
 import { MCU_BORDER } from '@/components/mcu/tracker-parts';
@@ -10,9 +10,11 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { SheetCloseButton } from '@/components/ui/sheet-close-button';
 import { accentHex, mcuColors, radius, spacing, tabularNums, type } from '@/constants/theme';
+import { useToast } from '@/context/toast';
 import { haptics } from '@/lib/haptics';
 import { useMcuTracker } from '@/lib/mcu/context';
-import { useMcuTrackerData } from '@/lib/mcu/hooks';
+import { useDeleteEpisode, useDeleteMcuItem, useMcuTrackerData } from '@/lib/mcu/hooks';
+import { parseGlobalId } from '@/lib/mcu/utils/editing';
 import type { Episode, McuItem, MovieItem, TvItem, WatchStatus } from '@/lib/mcu/types';
 import { useChangeStatus } from '@/lib/mcu/useChangeStatus';
 import { MODAL_LABELS, MODAL_TITLE, STATUS_LABELS, TYPE_META } from '@/lib/mcu/utils/constants';
@@ -68,6 +70,7 @@ export default function McuItemDetail() {
       {/* The hero already shows title/type/year; the sheet's light glass header would mute a title on this dark sheet. */}
       <Stack.Screen options={{ title: MODAL_TITLE[item.type === 'tv' ? 'tv' : 'movie'], headerTitle: '' }} />
       <SheetCloseButton />
+      <ItemMenu item={item} />
       <ScreenScrollView
         sideInsets={false}
         grouped={false}
@@ -78,6 +81,68 @@ export default function McuItemDetail() {
         {item.type === 'tv' ? <SeasonBody item={item} color={color} /> : <MovieBody item={item} color={color} />}
       </ScreenScrollView>
     </>
+  );
+}
+
+/** "⋯" menu: Edit, (seasons) Add Episode / Add Next Season, Delete. */
+function ItemMenu({ item }: { item: McuItem }) {
+  const remove = useDeleteMcuItem();
+  const addToast = useToast();
+  const isTv = item.type === 'tv';
+  const label = isTv ? `${item.title} Season ${item.seasonNumber}` : item.title;
+  const showId = isTv ? parseGlobalId(item.globalId)?.id : undefined;
+
+  const confirmDelete = () => {
+    const count = isTv ? item.episodes.length : 0;
+    Alert.alert(
+      `Delete ${label}?`,
+      count > 0 ? `Its ${count} episode${count === 1 ? '' : 's'} will be deleted too. This can't be undone.` : "This can't be undone.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () =>
+            remove.mutate(item.globalId, {
+              onSuccess: () => {
+                haptics.success();
+                addToast(`Deleted ${label}`, 'success');
+                router.back();
+              },
+              onError: (e) => addToast(e.message || 'Failed to delete', 'error'),
+            }),
+        },
+      ],
+    );
+  };
+
+  return (
+    <Stack.Toolbar placement="right">
+      <Stack.Toolbar.Menu icon="ellipsis" accessibilityLabel="More">
+        <Stack.Toolbar.MenuAction
+          icon="pencil"
+          onPress={() => router.push({ pathname: '/mcu/edit/item', params: { globalId: item.globalId } })}>
+          Edit
+        </Stack.Toolbar.MenuAction>
+        {isTv && showId ? (
+          <Stack.Toolbar.MenuAction
+            icon="plus"
+            onPress={() => router.push({ pathname: '/mcu/edit/episode', params: { showId: String(showId) } })}>
+            Add Episode
+          </Stack.Toolbar.MenuAction>
+        ) : null}
+        {isTv ? (
+          <Stack.Toolbar.MenuAction
+            icon="plus.square.on.square"
+            onPress={() => router.push({ pathname: '/mcu/edit/item', params: { nextSeasonOf: item.globalId } })}>
+            Add Next Season
+          </Stack.Toolbar.MenuAction>
+        ) : null}
+        <Stack.Toolbar.MenuAction icon="trash" destructive disabled={remove.isPending} onPress={confirmDelete}>
+          Delete
+        </Stack.Toolbar.MenuAction>
+      </Stack.Toolbar.Menu>
+    </Stack.Toolbar>
   );
 }
 
@@ -166,6 +231,45 @@ function EpisodeCheck({ status, color }: { status: WatchStatus; color: string })
 function SeasonBody({ item, color }: { item: TvItem; color: string }) {
   const { watched } = useMcuTracker();
   const { change, isPending, pendingId } = useChangeStatus();
+  const removeEpisode = useDeleteEpisode();
+  const addToast = useToast();
+  const showId = parseGlobalId(item.globalId)?.id;
+
+  const addEpisode = () =>
+    showId && router.push({ pathname: '/mcu/edit/episode', params: { showId: String(showId) } });
+
+  // Long press: Edit / Delete. A plain tap still cycles the watch status.
+  const episodeActions = (ep: Episode) => {
+    const episodeId = parseGlobalId(ep.globalId)?.id;
+    if (!showId || !episodeId) return;
+    haptics.tap();
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: `${ep.episodeNumber}. ${ep.title}`,
+        options: ['Edit Episode', 'Delete Episode', 'Cancel'],
+        destructiveButtonIndex: 1,
+        cancelButtonIndex: 2,
+      },
+      (index) => {
+        if (index === 0) {
+          router.push({ pathname: '/mcu/edit/episode', params: { showId: String(showId), episodeId: String(episodeId) } });
+        } else if (index === 1) {
+          Alert.alert(`Delete episode ${ep.episodeNumber}?`, `"${ep.title}" will be removed. This can't be undone.`, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete',
+              style: 'destructive',
+              onPress: () =>
+                removeEpisode.mutate(episodeId, {
+                  onSuccess: () => addToast(`Deleted episode ${ep.episodeNumber}`, 'success'),
+                  onError: (e) => addToast(e.message || 'Failed to delete episode', 'error'),
+                }),
+            },
+          ]);
+        }
+      },
+    );
+  };
   const watchedCount = item.episodes.filter((e) => getStatus(watched, e.globalId) === 'WATCHED').length;
 
   const cycle = (ep: Episode) => {
@@ -186,35 +290,47 @@ function SeasonBody({ item, color }: { item: TvItem; color: string }) {
         </Panel>
       )}
       <Synopsis text={item.synopsis} />
-      {item.episodes.length > 0 && (
-        <Panel label="Episodes">
-          <View style={styles.episodes}>
-            {item.episodes.map((ep, i) => {
-              const status = getStatus(watched, ep.globalId);
-              const busy = isPending && pendingId === ep.globalId;
-              return (
-                <Pressable
-                  key={ep.globalId ?? i}
-                  onPress={() => cycle(ep)}
-                  disabled={isPending}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Episode ${ep.episodeNumber ?? i + 1}, ${ep.title}, ${STATUS_LABELS[status]}`}
-                  accessibilityHint="Cycles unwatched, in progress, watched"
-                  style={({ pressed }) => [styles.episode, pressed && styles.episodePressed, busy && { opacity: 0.5 }]}>
-                  <EpisodeCheck status={status} color={color} />
-                  <Text style={[type.caption1, tabularNums, styles.epNum]}>{ep.episodeNumber ?? i + 1}</Text>
-                  <Text
-                    style={[type.subheadline, { flex: 1, color: status === 'WATCHED' ? mcuColors.secondaryLabel : mcuColors.label }]}
-                    numberOfLines={2}>
-                    {ep.title}
-                  </Text>
-                  {ep.runtime ? <Text style={[type.caption1, tabularNums, styles.muted]}>{ep.runtime} min</Text> : null}
-                </Pressable>
-              );
-            })}
-          </View>
+      <Panel label="Episodes">
+        <View style={styles.episodes}>
+          {item.episodes.length === 0 && (
+            <Text style={[type.subheadline, styles.muted, { paddingVertical: 6 }]}>No episodes yet.</Text>
+          )}
+          {item.episodes.map((ep, i) => {
+            const status = getStatus(watched, ep.globalId);
+            const busy = isPending && pendingId === ep.globalId;
+            return (
+              <Pressable
+                key={ep.globalId ?? i}
+                onPress={() => cycle(ep)}
+                onLongPress={() => episodeActions(ep)}
+                disabled={isPending}
+                accessibilityRole="button"
+                accessibilityLabel={`Episode ${ep.episodeNumber ?? i + 1}, ${ep.title}, ${STATUS_LABELS[status]}`}
+                accessibilityHint="Cycles unwatched, in progress, watched. Long press to edit or delete."
+                accessibilityActions={[{ name: 'longpress', label: 'Edit or delete' }]}
+                onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && episodeActions(ep)}
+                style={({ pressed }) => [styles.episode, pressed && styles.episodePressed, busy && { opacity: 0.5 }]}>
+                <EpisodeCheck status={status} color={color} />
+                <Text style={[type.caption1, tabularNums, styles.epNum]}>{ep.episodeNumber ?? i + 1}</Text>
+                <Text
+                  style={[type.subheadline, { flex: 1, color: status === 'WATCHED' ? mcuColors.secondaryLabel : mcuColors.label }]}
+                  numberOfLines={2}>
+                  {ep.title}
+                </Text>
+                {ep.runtime ? <Text style={[type.caption1, tabularNums, styles.muted]}>{ep.runtime} min</Text> : null}
+              </Pressable>
+            );
+          })}
+          <Pressable
+            onPress={addEpisode}
+            accessibilityRole="button"
+            accessibilityLabel="Add episode"
+            style={({ pressed }) => [styles.episode, pressed && styles.episodePressed]}>
+            <SymbolView name="plus.circle.fill" size={22} tintColor={color} />
+            <Text style={[type.subheadline, { color, fontWeight: '600' }]}>Add Episode</Text>
+          </Pressable>
+        </View>
         </Panel>
-      )}
     </>
   );
 }

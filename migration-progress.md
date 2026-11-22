@@ -84,6 +84,9 @@ Not covered: typing (the iOS 27 simulator clipboard doesn't work, and the driver
 - MCU: status changes go through one `useChangeStatus` hook (API → local `watched` → toast), shared by the poster badge and the detail sheet, the same order as the web.
 - MCU detail sheet: no header title. The hero shows title, type and year, and iOS's light glass header muted a title on the dark sheet.
 - MCU saga titles: dropped the web's text-shadow glow. On iOS it drew a dark box behind the text.
+- MCU add/edit/delete: the tracker's "+" menu adds a Movie, Special or Show Season (`mcu/edit/item?kind=`). The detail sheet's "⋯" menu has Edit, Add Episode, Add Next Season and Delete. Long-pressing an episode offers Edit and Delete, because a tap still cycles its status. The web puts these as icon buttons in the detail modal's header and on each episode row.
+- MCU forms (`mcu/edit/item`, `mcu/edit/episode`) use the system grouped-form look, not the always-dark tracker, so they share the form components with Library and Finances.
+- MCU detail sheet: opened by `globalId` (one per season), not the display id `show:3-season1`, so it stays open when a season is renumbered.
 - Finances: the web's "AI Assistant" tab (no route, 404) was left out.
 - Finances Income & Expenses: add uses a "+" in each section header that opens the transaction sheet (`id=new&type=…`, with a Cash switch). Delete is the trash button in the edit sheet's toolbar. The web does both inline, with a form at the top of the column and a trash icon on each row.
 - Finances month sheet: no local copy of the month. Everything is derived from the net-worth query and refetched after each change. The web hand-patched a `displayMonth` copy, which could drift.

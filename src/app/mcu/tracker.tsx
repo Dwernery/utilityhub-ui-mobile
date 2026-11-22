@@ -1,4 +1,4 @@
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -11,6 +11,7 @@ import { useMcuTrackerData } from '@/lib/mcu/hooks';
 import type { McuItem } from '@/lib/mcu/types';
 import { useChangeStatus } from '@/lib/mcu/useChangeStatus';
 import type { TrackerView } from '@/lib/mcu/utils/constants';
+import type { DraftKind } from '@/lib/mcu/utils/editing';
 import { normalizeTrackerData } from '@/lib/mcu/utils/normalizeTrackerData';
 import { categorySections, defaultExpanded, sagaSections } from '@/lib/mcu/utils/sections';
 import { Skeleton, SkeletonCard, SkeletonSurface, SkeletonTheme, SkeletonTiles } from '@/components/ui/skeleton';
@@ -44,8 +45,23 @@ export default function Tracker() {
     router.setParams({ view: v });
   };
 
+  const add = (kind: DraftKind) => router.push({ pathname: '/mcu/edit/item', params: { kind } });
+
   return (
     <>
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Menu icon="plus" accessibilityLabel="Add">
+          <Stack.Toolbar.MenuAction icon="film" onPress={() => add('movie')}>
+            Movie
+          </Stack.Toolbar.MenuAction>
+          <Stack.Toolbar.MenuAction icon="sparkles" onPress={() => add('special')}>
+            Special
+          </Stack.Toolbar.MenuAction>
+          <Stack.Toolbar.MenuAction icon="tv" onPress={() => add('show')}>
+            Show Season
+          </Stack.Toolbar.MenuAction>
+        </Stack.Toolbar.Menu>
+      </Stack.Toolbar>
       <ScreenScrollView
         grouped={false}
         style={styles.screen}
@@ -102,7 +118,7 @@ function TrackerBody({ data, view, onChangeView }: {
   const toggle = (key: string) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const onToggleItem = (item: McuItem) => change(item.id, nextStatus(watched[item.id]));
-  const onSelectItem = (item: McuItem) => router.push({ pathname: '/mcu/item/[globalId]', params: { globalId: item.id } });
+  const onSelectItem = (item: McuItem) => router.push({ pathname: '/mcu/item/[globalId]', params: { globalId: item.globalId } });
 
   return (
     <>

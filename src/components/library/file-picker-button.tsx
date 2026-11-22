@@ -1,7 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
-import { ActionSheetIOS, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActionSheetIOS, Alert, Pressable, StyleSheet, Text, View, type ColorValue } from 'react-native';
 
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { accents, colors, radius, spacing, type } from '@/constants/theme';
@@ -15,6 +15,10 @@ interface FilePickerButtonProps {
   /** 0–1 */
   uploadProgress?: number;
   disabled?: boolean;
+  /** Accent for the icon, label and progress bar (Library green by default). */
+  tint?: ColorValue;
+  /** Images only: hides "Choose File" (which also offers PDFs and Word files). */
+  imagesOnly?: boolean;
 }
 
 const DOC_TYPES = [
@@ -67,13 +71,17 @@ export function FilePickerButton({
   isUploading = false,
   uploadProgress = 0,
   disabled = false,
+  tint = accents.library,
+  imagesOnly = false,
 }: FilePickerButtonProps) {
+  const pickers = imagesOnly ? [pickFromLibrary, takePhoto] : [pickFromLibrary, takePhoto, pickDocument];
   const choose = () => {
+    const options = [...(imagesOnly ? ['Photo Library', 'Take Photo'] : ['Photo Library', 'Take Photo', 'Choose File']), 'Cancel'];
     ActionSheetIOS.showActionSheetWithOptions(
-      { options: ['Photo Library', 'Take Photo', 'Choose File', 'Cancel'], cancelButtonIndex: 3, title: label },
+      { options, cancelButtonIndex: options.length - 1, title: label },
       async (index) => {
         try {
-          const picker = [pickFromLibrary, takePhoto, pickDocument][index];
+          const picker = pickers[index];
           if (!picker) return;
           const file = await picker();
           if (file) onFileSelected(file);
@@ -88,10 +96,10 @@ export function FilePickerButton({
     return (
       <View style={styles.box} accessibilityLabel={`Uploading, ${Math.round(uploadProgress * 100)} percent`}>
         <View style={styles.row}>
-          <SymbolView name="arrow.up.circle" size={20} tintColor={accents.library} />
+          <SymbolView name="arrow.up.circle" size={20} tintColor={tint} />
           <Text style={[type.subheadline, styles.text]}>Uploading… {Math.round(uploadProgress * 100)}%</Text>
         </View>
-        <ProgressBar value={uploadProgress} tint={accents.library} />
+        <ProgressBar value={uploadProgress} tint={tint} />
       </View>
     );
   }
@@ -122,8 +130,8 @@ export function FilePickerButton({
       accessibilityRole="button"
       accessibilityLabel={`Choose ${label.toLowerCase()}`}
       style={({ pressed }) => [styles.box, styles.row, pressed && styles.pressed, disabled && styles.disabled]}>
-      <SymbolView name="photo.badge.plus" size={20} tintColor={accents.library} />
-      <Text style={[type.body, { color: accents.library, flex: 1 }]}>Choose {label}</Text>
+      <SymbolView name="photo.badge.plus" size={20} tintColor={tint} />
+      <Text style={[type.body, { color: tint, flex: 1 }]}>Choose {label}</Text>
       <SymbolView name="chevron.right" size={13} weight="semibold" tintColor={colors.tertiaryLabel} />
     </Pressable>
   );
