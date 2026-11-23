@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/context/toast';
 import * as api from './api';
-import { AUTHORS_KEY, BOOKS_KEY, SERIES_KEY } from './queryKeys';
+import { AUTHORS_KEY, BOOKS_KEY, GOALS_KEY, SERIES_KEY } from './queryKeys';
 import type { Book } from './types';
 import { todayIso } from '@/lib/dates';
 import { uploadFileToS3, validateFile, type PickedFile } from './utils/s3Upload';
@@ -20,6 +20,11 @@ export function useAuthors() {
 
 export function useSeries() {
   return useQuery({ queryKey: SERIES_KEY, queryFn: api.getSeries });
+}
+
+/** Yearly reading goals. Doesn't retry: if the API has no goals yet, the goal card just stays hidden. */
+export function useGoals() {
+  return useQuery({ queryKey: GOALS_KEY, queryFn: api.getGoals, retry: false });
 }
 
 /** Single book derived from the books cache, so sheets always reflect the latest server state. */
@@ -43,6 +48,8 @@ export const useUpdateBook = () => useInvalidatingMutation(api.updateBook, BOOKS
 export const useDeleteBook = () => useInvalidatingMutation(api.deleteBook, BOOKS_KEY);
 export const useCreateAuthor = () => useInvalidatingMutation(api.createAuthor, AUTHORS_KEY);
 export const useCreateSeries = () => useInvalidatingMutation(api.createSeries, SERIES_KEY);
+export const useSetGoal = () => useInvalidatingMutation(api.setGoal, GOALS_KEY);
+export const useDeleteGoal = () => useInvalidatingMutation(api.deleteGoal, GOALS_KEY);
 
 /**
  * Shared "start reading" mutation used by Randomize, StartReading and CurrentlyReading

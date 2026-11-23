@@ -3,22 +3,42 @@ import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 
 import { LibrarySwitcher } from '@/components/library/library-switcher';
 import { CurrentlyReadingCard } from '@/components/library/metrics/currently-reading';
-import { YearChartCard, YearComparisonCard } from '@/components/library/metrics/year-sections';
+import { GoalCard } from '@/components/library/metrics/goal-card';
+import { PeriodPicker } from '@/components/library/metrics/period-picker';
+import { YearChartCard, YearDetailsCard } from '@/components/library/metrics/year-sections';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { StatTile } from '@/components/ui/stat-tile';
 import { accents, colors, spacing, type } from '@/constants/theme';
 import { useIsWide } from '@/hooks/use-is-wide';
 import { useBooks } from '@/lib/library/hooks';
 import { calculateMetrics } from '@/lib/library/utils/metricUtils';
+import { formatDelta, periodStats, periodYears } from '@/lib/library/utils/period';
 import { SkeletonCard, SkeletonTiles } from '@/components/ui/skeleton';
 import type { GraphMetric } from '@/lib/library/utils/yearDetails';
 
 export default function Metrics() {
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  // What the stats below "now" describe: all time (null) or one year.
+  const [period, setPeriod] = useState<number | null>(null);
   const [graphMetric, setGraphMetric] = useState<GraphMetric>('books');
   const { data: books = [], isPending, isError, error, refetch, isRefetching } = useBooks();
   const wide = useIsWide();
-  const metrics = useMemo(() => calculateMetrics(books, selectedYear), [books, selectedYear]);
+  const metrics = useMemo(() => calculateMetrics(books, period), [books, period]);
+  const years = useMemo(() => periodYears(books), [books]);
+  const stats = useMemo(() => periodStats(books, period), [books, period]);
+  const thisYear = new Date().getFullYear();
+
+  // Up is green, down is red, for books, pages and rating; longer or shorter books aren't better or worse.
+  const tone = (n: number | null | undefined, neutral = false) =>
+    n == null || n === 0 || neutral ? colors.secondaryLabel : n > 0 ? colors.positive : colors.negative;
+  const tile = (label: string, value: string | number, change: number | null | undefined, decimals = 0, neutral = false) => (
+    <StatTile
+      label={label}
+      value={value}
+      caption={formatDelta(change ?? null, decimals) ?? undefined}
+      captionTint={tone(change, neutral)}
+      style={styles.tile}
+    />
+  );
 
   return (
     <ScreenScrollView
@@ -46,44 +66,48 @@ export default function Metrics() {
         </View>
       ) : (
         <>
-          <CurrentlyReadingCard books={books} />
+          {/* Wide: lined up with the stat tiles below (same gap): Currently Reading spans 3 tiles,
+              the goal 1, equal heights. Phone: stacked. */}
+          <View style={wide ? styles.nowRow : styles.stack}>
+            <CurrentlyReadingCard books={books} style={wide && styles.threeTiles} />
+            <GoalCard
+              year={thisYear}
+              done={metrics.byYear[thisYear]?.books ?? 0}
+              stacked={wide}
+              style={wide && styles.oneTile}
+            />
+          </View>
 
-          {/* Wide: one row of four tiles; phone: 2×2. */}
-          <View style={[styles.tiles, wide && styles.tileRow]}>
-            <View style={[styles.tileRow, wide && styles.flex]}>
-              <StatTile label="Books" value={metrics.allTimeBooks} style={styles.tile} />
-              <StatTile label="Pages" value={metrics.allTimePages.toLocaleString()} style={styles.tile} />
-            </View>
-            <View style={[styles.tileRow, wide && styles.flex]}>
-              <StatTile
-                label="Avg pages"
-                value={metrics.allTimeBooks > 0 ? Math.round(metrics.allTimePages / metrics.allTimeBooks) : 0}
-                style={styles.tile}
-              />
-              <StatTile label="Avg rating" value={metrics.allTimeRating} style={styles.tile} />
+          {/* Everything below follows the picker: the tiles describe the period, then all time shows
+              the per-year chart (tap a bar to pick that year) and a year shows its months and books. */}
+          <View style={styles.periodSection}>
+            {/* A hairline separates "now" (above) from the history the picker drives (below). */}
+            <View style={styles.divider} />
+            <PeriodPicker years={years} value={period} onChange={setPeriod} />
+
+            {/* Wide: one row of four tiles; phone: 2×2. */}
+            <View style={[styles.tiles, wide && styles.tileRow]}>
+              <View style={[styles.tileRow, wide && styles.flex]}>
+                {tile('Books', stats.books, stats.vs?.books)}
+                {tile('Pages', stats.pages.toLocaleString(), stats.vs?.pages)}
+              </View>
+              <View style={[styles.tileRow, wide && styles.flex]}>
+                {tile('Avg pages', stats.avgPages ?? '—', stats.vs?.avgPages, 0, true)}
+                {tile('Avg rating', stats.avgRating != null ? stats.avgRating.toFixed(1) : '—', stats.vs?.avgRating, 1)}
+              </View>
             </View>
           </View>
 
-          {/* Wide: chart beside the year list; phone: stacked. */}
-          <View style={wide ? styles.columns : styles.stack}>
-            <View style={wide ? styles.flex : undefined}>
-              <YearChartCard
-                metrics={metrics}
-                graphMetric={graphMetric}
-                setGraphMetric={setGraphMetric}
-                selectedYear={selectedYear}
-                setSelectedYear={setSelectedYear}
-              />
-            </View>
-            <View style={wide ? styles.flex : undefined}>
-              <YearComparisonCard
-                metrics={metrics}
-                books={books}
-                selectedYear={selectedYear}
-                setSelectedYear={setSelectedYear}
-              />
-            </View>
-          </View>
+          {period == null ? (
+            <YearChartCard
+              metrics={metrics}
+              graphMetric={graphMetric}
+              setGraphMetric={setGraphMetric}
+              onPickYear={setPeriod}
+            />
+          ) : (
+            <YearDetailsCard year={period} metrics={metrics} books={books} />
+          )}
         </>
       )}
     </ScreenScrollView>
@@ -95,7 +119,14 @@ const styles = StyleSheet.create({
   state: { alignItems: 'center', gap: spacing.sm, paddingVertical: 64 },
   flex: { flex: 1, minWidth: 0 },
   stack: { gap: spacing.lg },
-  columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
+  // With gap g, a tile is (W − 3g) / 4. Growing 3:1 from a 2g head start makes Currently Reading
+  // exactly 3 tiles + 2 gaps and the goal exactly 1 tile, so both edges line up with the tiles.
+  // Alone (no goal), Currently Reading fills the row.
+  nowRow: { flexDirection: 'row', gap: spacing.sm },
+  threeTiles: { flexGrow: 3, flexShrink: 1, flexBasis: spacing.sm * 2, minWidth: 0 },
+  oneTile: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
+  periodSection: { gap: spacing.md },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginBottom: spacing.xs },
   tiles: { gap: spacing.sm },
   tileRow: { flexDirection: 'row', gap: spacing.sm },
   tile: { backgroundColor: colors.secondaryGroupedBackground },

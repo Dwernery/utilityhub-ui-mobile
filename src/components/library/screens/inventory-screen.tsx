@@ -1,8 +1,9 @@
 import { router, Stack } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { SearchBarCommands } from 'react-native-screens';
 
 import { BookRow } from '@/components/library/book-row';
 import { LibrarySwitcher } from '@/components/library/library-switcher';
@@ -29,6 +30,7 @@ export default function Inventory() {
   const insets = useSafeAreaInsets();
   const wide = useIsWide();
   const [search, setSearch] = useState('');
+  const searchBarRef = useRef<SearchBarCommands>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const { data: books = [], isPending, isError, error, refetch, isRefetching } = useBooks();
 
@@ -48,11 +50,17 @@ export default function Inventory() {
     setStatusFilter(f);
   }, []);
 
+  const clearSearch = useCallback(() => {
+    searchBarRef.current?.clearText();
+    setSearch('');
+  }, []);
+
   const filterLabel = FILTERS.find((f) => f.value === statusFilter)!.label;
 
   return (
     <>
       <Stack.SearchBar
+        ref={searchBarRef}
         placeholder="Search title, author, series"
         onChangeText={(e) => setSearch(e.nativeEvent.text)}
         onCancelButtonPress={() => setSearch('')}
@@ -143,6 +151,11 @@ export default function Inventory() {
               <SymbolView name="magnifyingglass" size={32} tintColor={colors.tertiaryLabel} />
               <Text style={[type.headline, { color: colors.label }]}>No books found</Text>
               <Text style={[type.subheadline, { color: colors.secondaryLabel }]}>Try a different search or filter.</Text>
+              {search.trim() !== '' && (
+                <Pressable onPress={clearSearch} accessibilityRole="button">
+                  <Text style={[type.subheadline, { color: accents.library, fontWeight: '600' }]}>Clear search</Text>
+                </Pressable>
+              )}
               {statusFilter !== 'ALL' && (
                 <Pressable onPress={() => setFilter('ALL')} accessibilityRole="button">
                   <Text style={[type.subheadline, { color: accents.library, fontWeight: '600' }]}>Show all books</Text>

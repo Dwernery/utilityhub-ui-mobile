@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { BookCover } from '@/components/library/book-cover';
 import { Card } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { useUpdateBook } from '@/lib/library/hooks';
 import type { Book } from '@/lib/library/types';
 import { todayIso } from '@/lib/dates';
 import { readingProgress } from '@/lib/library/utils/homeStats';
+import { paceLabel } from '@/lib/library/utils/pace';
 
 function PillButton({ title, icon, tint, onPress, disabled }: {
   title: string;
@@ -39,6 +40,7 @@ function ReadingRow({ book }: { book: Book }) {
   const addToast = useToast();
   const [pageText, setPageText] = useState(String(book.currentPage ?? 0));
   const { pct, days } = readingProgress(book);
+  const pace = paceLabel(book);
   const pending = updateBook.isPending;
 
   const mutate = (vars: Parameters<typeof updateBook.mutate>[0], ok: string, fail: string) =>
@@ -75,10 +77,16 @@ function ReadingRow({ book }: { book: Book }) {
             disabled={pending}
             onPress={() => {
               haptics.success();
-              mutate(
+              updateBook.mutate(
                 { id: book.id, status: 'READ', endDate: todayIso(), currentPage: book.pages ?? null },
-                `Marked ${book.title} as read`,
-                'Failed to mark book read',
+                {
+                  onSuccess: () => {
+                    addToast(`Marked ${book.title} as read`, 'success');
+                    // Ask for a rating while it's fresh: the book's sheet, with a prompt over the stars.
+                    router.push({ pathname: '/library/book/[id]', params: { id: String(book.id), rate: '1' } });
+                  },
+                  onError: (err) => addToast(`Failed to mark book read: ${err?.message || 'Unknown error'}`, 'error'),
+                },
               );
             }}
           />
@@ -100,15 +108,16 @@ function ReadingRow({ book }: { book: Book }) {
         <Text style={[type.footnote, tabularNums, { color: colors.secondaryLabel }]}>/{book.pages ?? '?'}</Text>
         <Text style={[type.footnote, tabularNums, styles.pct]}>{pct}%</Text>
       </View>
+      {pace ? <Text style={[type.footnote, tabularNums, styles.pace]}>{pace}</Text> : null}
     </View>
   );
 }
 
 /** "Currently Reading" card (ported from the web Metrics page). */
-export function CurrentlyReadingCard({ books }: { books: Book[] }) {
+export function CurrentlyReadingCard({ books, style }: { books: Book[]; style?: StyleProp<ViewStyle> }) {
   const reading = books.filter((b) => b.status === 'IN_PROGRESS');
   return (
-    <Card padded={false}>
+    <Card padded={false} style={style}>
       <View style={styles.header}>
         <Text style={[type.headline, { color: colors.label, flex: 1 }]}>Currently Reading</Text>
         <Pressable
@@ -171,5 +180,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.tertiaryFill,
   },
   pct: { color: colors.secondaryLabel, fontWeight: '600', minWidth: 36, textAlign: 'right' },
+  pace: { color: colors.secondaryLabel, marginTop: -spacing.xs },
   empty: { color: colors.secondaryLabel, paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
 });

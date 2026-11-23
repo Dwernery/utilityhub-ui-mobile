@@ -12,11 +12,21 @@ interface CardProps {
   onPress?: () => void;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
+  /** Layout style for the tappable wrapper (with `onPress`), e.g. `flex` in a row; `style` styles the surface inside it. */
+  containerStyle?: StyleProp<ViewStyle>;
   padded?: boolean;
 }
 
 /** Base surface. Replaces the web's `bg-white rounded-xl border shadow-sm` boxes (UtilityCard, SectionCard…). */
-export function Card({ children, variant = 'grouped', onPress, accessibilityLabel, style, padded = true }: CardProps) {
+export function Card({
+  children,
+  variant = 'grouped',
+  onPress,
+  accessibilityLabel,
+  style,
+  containerStyle,
+  padded = true,
+}: CardProps) {
   const surface = [styles.card, padded && styles.padded, style];
 
   const body =
@@ -28,14 +38,14 @@ export function Card({ children, variant = 'grouped', onPress, accessibilityLabe
       <View style={[surface, styles.grouped]}>{children}</View>
     );
 
-  if (!onPress) return body;
+  if (!onPress) return containerStyle ? <View style={containerStyle}>{body}</View> : body;
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => pressed && styles.pressed}>
+      style={({ pressed }) => [containerStyle, pressed && styles.pressed]}>
       {body}
     </Pressable>
   );

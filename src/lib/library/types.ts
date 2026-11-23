@@ -30,6 +30,12 @@ export interface Series {
   name: string;
 }
 
+/** How many books to finish in a year. */
+export interface ReadingGoal {
+  year: number;
+  target: number;
+}
+
 export interface NewBookInput {
   title: string;
   pages?: number | string | null;

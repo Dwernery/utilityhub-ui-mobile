@@ -19,7 +19,10 @@ import { parseIdParam } from '@/lib/routeParams';
 const STATUS_TEXT = { READ: 'Finished', IN_PROGRESS: 'Reading', UNREAD: 'Unread' } as const;
 
 export default function BookDetail() {
-  const id = parseIdParam(useLocalSearchParams<{ id: string }>().id);
+  const params = useLocalSearchParams<{ id: string; rate?: string }>();
+  const id = parseIdParam(params.id);
+  // Opened by "Done" in Currently Reading: ask for a rating over the stars until there is one.
+  const askToRate = params.rate === '1';
   const { data: book, isPending } = useBook(id);
   const updateBook = useUpdateBook();
   const deleteBook = useDeleteBook();
@@ -135,6 +138,9 @@ export default function BookDetail() {
         </View>
 
         <View style={styles.ratingRow}>
+          {askToRate && book.status === 'READ' && !(optimisticRating ?? book.rating) ? (
+            <Text style={[type.headline, { color: colors.label }]}>Finished! How was it?</Text>
+          ) : null}
           <StarRating value={optimisticRating ?? book.rating ?? 0} onChange={canRate ? onRate : undefined} size="lg" />
           {book.status !== 'READ' && (
             <Text style={[type.caption1, { color: colors.tertiaryLabel }]}>Rate after finishing</Text>

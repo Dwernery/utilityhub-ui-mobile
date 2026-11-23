@@ -1,5 +1,5 @@
 import { requestJson, requestVoid } from '../http';
-import type { Author, Book, BookUpdate, NewBookInput, PresignedUpload, Series } from './types';
+import type { Author, Book, BookUpdate, NewBookInput, PresignedUpload, ReadingGoal, Series } from './types';
 
 export function getBooks() {
   return requestJson<Book[]>('/api/library/books', { errorMessage: 'Failed to fetch books' });
@@ -13,22 +13,40 @@ export function getSeries() {
   return requestJson<Series[]>('/api/library/series', { errorMessage: 'Failed to fetch series' });
 }
 
+export function getGoals() {
+  return requestJson<ReadingGoal[]>('/api/library/goals', { errorMessage: 'Failed to fetch reading goals' });
+}
+
+export function setGoal({ year, target }: ReadingGoal) {
+  return requestJson<ReadingGoal>(`/api/library/goals/${year}`, {
+    method: 'PUT',
+    body: { target },
+    errorMessage: 'Failed to save reading goal',
+  });
+}
+
+export async function deleteGoal(year: number) {
+  await requestVoid(`/api/library/goals/${year}`, { method: 'DELETE', errorMessage: 'Failed to remove reading goal' });
+}
+
+/** Returns the saved name: an existing author's, if one matches ignoring case (the API doesn't duplicate). */
 export async function createAuthor(authorName: string) {
-  await requestVoid('/api/library/authors', {
+  const author = await requestJson<Author>('/api/library/authors', {
     method: 'POST',
     body: { fullName: authorName },
     errorMessage: 'Failed to create author',
   });
-  return { name: authorName };
+  return { name: author.fullName };
 }
 
+/** Returns the saved name: an existing series', if one matches ignoring case (the API doesn't duplicate). */
 export async function createSeries(seriesName: string) {
-  await requestVoid('/api/library/series', {
+  const series = await requestJson<Series>('/api/library/series', {
     method: 'POST',
     body: { name: seriesName },
     errorMessage: 'Failed to create series',
   });
-  return { name: seriesName };
+  return { name: series.name };
 }
 
 export function addBook({ title, pages, authorName, seriesName }: NewBookInput) {
