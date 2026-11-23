@@ -8,22 +8,18 @@ import { mcuColors, radius, spacing, tabularNums, type } from '@/constants/theme
 import { haptics } from '@/lib/haptics';
 import type { McuItem, WatchedMap, WatchStats, WatchStatus } from '@/lib/mcu/types';
 import { BREAKDOWN, VIEWS, type TrackerView } from '@/lib/mcu/utils/constants';
-import type { PhaseCard, SearchResult, TrackerSection } from '@/lib/mcu/utils/sections';
+import type { PhaseCard, TrackerSection } from '@/lib/mcu/utils/sections';
 import { formatMinutes, percentage, typeSummary } from '@/lib/mcu/utils/stats';
 
 import { PosterCard } from './poster-card';
 
 export const MCU_BORDER = '#334155'; // slate-700
 
-/**
- * View switcher + overall progress + per-type breakdown (the web tracker Header).
- * `viewSwitchDisabled` while searching: results cover both views, so the switch is turned off.
- */
-export function TrackerOverview({ view, onChangeView, stats, viewSwitchDisabled = false }: {
+/** View switcher + overall progress + per-type breakdown (the web tracker Header). */
+export function TrackerOverview({ view, onChangeView, stats }: {
   view: TrackerView;
   onChangeView: (v: TrackerView) => void;
   stats: WatchStats;
-  viewSwitchDisabled?: boolean;
 }) {
   // Weighted by runtime, so a 3-hour movie moves the bar more than a 30-minute episode.
   const pct = percentage(stats.minutesDone, stats.minutes);
@@ -34,7 +30,6 @@ export function TrackerOverview({ view, onChangeView, stats, viewSwitchDisabled 
         values={VIEWS.map((v) => v.label)}
         selectedIndex={VIEWS.findIndex((v) => v.key === view)}
         appearance="dark"
-        enabled={!viewSwitchDisabled}
         onChange={(e) => {
           const next = VIEWS[e.nativeEvent.selectedSegmentIndex]?.key;
           if (next && next !== view) {
@@ -109,30 +104,6 @@ function PosterRow({ items, color, watched, onChangeStatus, onSelectItem }: {
         />
       ))}
     </ScrollView>
-  );
-}
-
-/** Search results: posters in a wrapping grid, each keeping its phase/category color. */
-export function PosterGrid({ results, watched, onChangeStatus, onSelectItem }: {
-  results: SearchResult[];
-  watched: WatchedMap;
-  onChangeStatus: (item: McuItem, status: WatchStatus) => void;
-  onSelectItem: (item: McuItem) => void;
-}) {
-  return (
-    <View style={styles.grid}>
-      {results.map(({ item, color }) => (
-        <PosterCard
-          key={item.globalId}
-          item={item}
-          color={color}
-          watched={watched}
-          onChangeStatus={onChangeStatus}
-          onSelectItem={onSelectItem}
-          showTitle
-        />
-      ))}
-    </View>
   );
 }
 

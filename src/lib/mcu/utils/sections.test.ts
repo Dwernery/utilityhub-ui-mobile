@@ -1,5 +1,14 @@
 import type { ExpandedCategory, McuItem, Phase, WatchedMap } from '../types';
-import { defaultExpanded, findItem, sagaSections, searchItems, unfinishedOnly } from './sections';
+import {
+  allExpanded,
+  categorySections,
+  countItems,
+  defaultExpanded,
+  findItem,
+  matchingOnly,
+  sagaSections,
+  unfinishedOnly,
+} from './sections';
 
 const movie = (n: number, title: string) =>
   ({ id: `movie:${n}`, recordId: n, globalId: `movie:${n}`, type: 'movie', title, premiereDate: 2008 }) as McuItem;
@@ -35,17 +44,39 @@ describe('sagaSections', () => {
   });
 });
 
-describe('searchItems', () => {
-  it('matches titles case-insensitively across phases and categories, with their colors', () => {
-    expect(searchItems(phases, categories, 'iron').map((r) => r.item.title)).toEqual(['Iron Man', 'Iron Man 2']);
-    // Phases use their saga's color: Phase 1 → Infinity Saga blue.
-    expect(searchItems(phases, categories, 'iron')[0].color).toBe('#4C8DFF');
-    expect(searchItems(phases, categories, 'DARE')).toEqual([{ item: categories[0].items[0], color: '#999999' }]);
+describe('matchingOnly', () => {
+  const sections = () => sagaSections(phases, {});
+
+  it('keeps matching titles case-insensitively, dropping empty phases and sagas', () => {
+    const shown = matchingOnly(sections(), 'IRON');
+    expect(shown.map((s) => s.key)).toEqual(['saga-infinity']);
+    expect(countItems(shown)).toBe(2);
+    expect(shown[0].stats).toEqual(sections()[0].stats); // whole-section stats
   });
 
-  it('matches a season by episode title, and returns nothing for a blank query', () => {
-    expect(searchItems(phases, categories, 'glorious').map((r) => r.item.globalId)).toEqual(['show:1']);
-    expect(searchItems(phases, categories, '  ')).toEqual([]);
+  it('matches a season by episode title, and keeps everything for a blank query', () => {
+    const shown = matchingOnly(sections(), 'glorious');
+    expect(shown[0].cards[0].items.map((i) => i.globalId)).toEqual(['show:1']);
+    expect(matchingOnly(sections(), '  ')).toEqual(sections());
+  });
+
+  it('works on categories, and combines with Not Finished', () => {
+    expect(countItems(matchingOnly(categorySections(categories, {}), 'dare'))).toBe(1);
+    const watched: WatchedMap = { 'movie:1': 'WATCHED' };
+    expect(countItems(unfinishedOnly(matchingOnly(sagaSections(phases, watched), 'iron'), watched))).toBe(1);
+  });
+});
+
+describe('allExpanded', () => {
+  it('opens every section and card, with toggles from this search on top', () => {
+    const sections = sagaSections(phases, {});
+    expect(allExpanded(sections)).toEqual({
+      'saga-infinity': true,
+      'phase-1': true,
+      'saga-multiverse': true,
+      'phase-4': true,
+    });
+    expect(allExpanded(sections, { 'phase-1': false })['phase-1']).toBe(false);
   });
 });
 

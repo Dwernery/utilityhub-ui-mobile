@@ -1,9 +1,9 @@
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
-import { PosterGrid, SagaSectionView, TrackerOverview } from '@/components/mcu/tracker-parts';
+import { SagaSectionView, TrackerOverview } from '@/components/mcu/tracker-parts';
 import { LoadError } from '@/components/ui/load-error';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { accentHex, accents, mcuColors, spacing, tabularNums, type } from '@/constants/theme';
@@ -12,9 +12,18 @@ import { useMcuTracker } from '@/lib/mcu/context';
 import { useMcuTrackerData } from '@/lib/mcu/hooks';
 import type { McuItem, WatchStatus } from '@/lib/mcu/types';
 import { useChangeStatus } from '@/lib/mcu/useChangeStatus';
-import type { TrackerView } from '@/lib/mcu/utils/constants';
+import { VIEWS, type TrackerView } from '@/lib/mcu/utils/constants';
 import type { DraftKind } from '@/lib/mcu/utils/editing';
-import { categorySections, defaultExpanded, sagaSections, searchItems, unfinishedOnly } from '@/lib/mcu/utils/sections';
+import {
+  allExpanded,
+  categorySections,
+  countItems,
+  defaultExpanded,
+  matchingOnly,
+  sagaSections,
+  unfinishedOnly,
+  type TrackerSection,
+} from '@/lib/mcu/utils/sections';
 import { Skeleton, SkeletonCard, SkeletonSurface, SkeletonTheme, SkeletonTiles } from '@/components/ui/skeleton';
 import { combineStats } from '@/lib/mcu/utils/stats';
 
@@ -67,9 +76,8 @@ export default function Tracker() {
         tintColor={accents.mcu}
       />
       <Stack.Toolbar placement="right">
-        {/* Off while searching: results always include every match, like the view switch. */}
+        {/* Search, view and filter all narrow the same list, as in Library. */}
         <Stack.Toolbar.Menu
-          disabled={search.trim() !== ''}
           icon={filter === 'all' ? 'line.3.horizontal.decrease.circle' : 'line.3.horizontal.decrease.circle.fill'}
           accessibilityLabel={`Filter, ${FILTERS.find((f) => f.value === filter)!.label}`}>
           <Stack.Toolbar.Menu inline title="Show">
@@ -123,18 +131,19 @@ export default function Tracker() {
           <LoadError what="the MCU tracker" error={error} onRetry={() => refetch()} tint={accentHex.mcu} dark />
         ) : (
           // Mounts once data exists, so its default expansion is computed exactly once.
-          <TrackerBody view={view} onChangeView={changeView} search={search} filter={filter} />
+          <TrackerBody view={view} onChangeView={changeView} search={search} filter={filter} onShowAll={() => setFilter('all')} />
         )}
       </ScreenScrollView>
     </>
   );
 }
 
-function TrackerBody({ view, onChangeView, search, filter }: {
+function TrackerBody({ view, onChangeView, search, filter, onShowAll }: {
   view: TrackerView;
   onChangeView: (v: TrackerView) => void;
   search: string;
   filter: Filter;
+  onShowAll: () => void;
 }) {
   const { watched, phases, expandedCategories } = useMcuTracker();
   const { change } = useChangeStatus();
@@ -147,56 +156,102 @@ function TrackerBody({ view, onChangeView, search, filter }: {
   // Unfinished sections start open (web behavior), computed once — later status changes don't
   // re-open things you collapsed.
   const [expanded, setExpanded] = useState(() => ({ ...defaultExpanded(sagas), ...defaultExpanded(categories) }));
-  const toggle = (key: string) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
-
   const onChangeStatus = (item: McuItem, status: WatchStatus) => change(item.id, status);
   const onSelectItem = (item: McuItem) => router.push({ pathname: '/mcu/item/[globalId]', params: { globalId: item.globalId } });
 
-  // Search spans both views, so a show isn't "missing" because it's in the other one.
-  const results = useMemo(
-    () => searchItems(phases, expandedCategories, search),
-    [phases, expandedCategories, search],
+  // Search filters the list in place, like Library's: only matching titles stay, in the current
+  // view, together with "Not Finished". Stats stay those of the whole view.
+  const unfinished = filter === 'unfinished';
+  const query = search.trim();
+  const searching = query !== '';
+  const narrow = useCallback(
+    (list: TrackerSection[]) => {
+      const matches = matchingOnly(list, search);
+      return unfinished ? unfinishedOnly(matches, watched) : matches;
+    },
+    [search, unfinished, watched],
   );
-  const shown = useMemo(
-    () => (filter === 'unfinished' ? unfinishedOnly(sections, watched) : sections),
-    [filter, sections, watched],
-  );
+  const shown = useMemo(() => narrow(sections), [narrow, sections]);
+  const shownCount = useMemo(() => countItems(shown), [shown]);
 
-  if (search.trim()) {
-    return (
-      <>
-        <TrackerOverview view={view} onChangeView={onChangeView} stats={overall} viewSwitchDisabled />
-        <Text style={[type.footnote, tabularNums, styles.count]}>
-          {results.length} {results.length === 1 ? 'result' : 'results'}
-        </Text>
-        {results.length > 0 ? (
-          <PosterGrid results={results} watched={watched} onChangeStatus={onChangeStatus} onSelectItem={onSelectItem} />
-        ) : (
-          <Text style={[type.subheadline, styles.empty]}>No titles match “{search.trim()}”.</Text>
-        )}
-      </>
-    );
-  }
+  // Matches in the other view, offered when nothing here matches, so a show there doesn't seem missing.
+  const otherView: TrackerView = view === 'phases' ? 'categories' : 'phases';
+  const otherCount = useMemo(
+    () => (searching ? countItems(narrow(view === 'phases' ? categories : sagas)) : 0),
+    [searching, narrow, view, categories, sagas],
+  );
+  // Matches here that "Not Finished" hid (all watched).
+  const hiddenByFilter = useMemo(
+    () => (searching && unfinished ? countItems(matchingOnly(sections, search)) - shownCount : 0),
+    [searching, unfinished, sections, search, shownCount],
+  );
+  const viewLabel = VIEWS.find((v) => v.key === view)!.label;
+  const otherLabel = VIEWS.find((v) => v.key === otherView)!.label;
+
+  // While searching every section and phase is open, so a match isn't hidden in a collapsed one.
+  // Toggles made during a search apply to that search only; clearing it brings back your layout.
+  const [searchToggles, setSearchToggles] = useState<{ query: string; open: Record<string, boolean> }>({
+    query: '',
+    open: {},
+  });
+  const overrides = searchToggles.query === query ? searchToggles.open : {};
+  const shownExpanded = searching ? allExpanded(shown, overrides) : expanded;
+  const toggle = (key: string) => {
+    if (searching) setSearchToggles({ query, open: { ...overrides, [key]: !(overrides[key] ?? true) } });
+    else setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const textAction = (label: string, onPress: () => void) => (
+    <Pressable
+      onPress={() => {
+        haptics.selection();
+        onPress();
+      }}
+      accessibilityRole="button"
+      hitSlop={8}>
+      <Text style={[type.subheadline, { color: accents.mcu, fontWeight: '600' }]}>{label}</Text>
+    </Pressable>
+  );
+  const otherViewAction =
+    otherCount > 0 &&
+    textAction(`${otherCount} ${otherCount === 1 ? 'match' : 'matches'} in ${otherLabel}`, () => onChangeView(otherView));
 
   return (
     <>
       <TrackerOverview view={view} onChangeView={onChangeView} stats={overall} />
+      {searching && shownCount > 0 && (
+        <Text style={[type.footnote, tabularNums, styles.count]}>
+          {shownCount} {shownCount === 1 ? 'match' : 'matches'}
+          {unfinished ? ' · Not Finished' : ''}
+        </Text>
+      )}
       {shown.map((section) => (
         <SagaSectionView
           key={section.key}
           section={section}
-          expanded={expanded}
+          expanded={shownExpanded}
           onToggle={toggle}
           watched={watched}
           onChangeStatus={onChangeStatus}
           onSelectItem={onSelectItem}
         />
       ))}
-      {shown.length === 0 && (
-        <Text style={[type.subheadline, styles.empty]}>
-          {sections.length > 0 && filter === 'unfinished' ? 'All caught up. Everything here is watched.' : 'Nothing here yet.'}
-        </Text>
-      )}
+      {shown.length === 0 &&
+        (searching ? (
+          <View style={styles.emptyBox}>
+            <Text style={[type.subheadline, styles.emptyText]}>
+              {hiddenByFilter > 0
+                ? `Every title in ${viewLabel} matching “${query}” is watched.`
+                : `No titles in ${viewLabel} match “${query}”.`}
+            </Text>
+            {hiddenByFilter > 0 && textAction('Show all titles', onShowAll)}
+            {otherViewAction}
+          </View>
+        ) : (
+          <Text style={[type.subheadline, styles.empty]}>
+            {sections.length > 0 && unfinished ? 'All caught up. Everything here is watched.' : 'Nothing here yet.'}
+          </Text>
+        ))}
     </>
   );
 }
@@ -208,4 +263,6 @@ const styles = StyleSheet.create({
   posterSkeleton: { flexDirection: 'row', gap: 10, padding: spacing.md, overflow: 'hidden' },
   count: { color: mcuColors.secondaryLabel, marginBottom: spacing.sm },
   empty: { color: mcuColors.secondaryLabel, textAlign: 'center', paddingVertical: 48 },
+  emptyBox: { alignItems: 'center', gap: spacing.sm, paddingVertical: 48 },
+  emptyText: { color: mcuColors.secondaryLabel, textAlign: 'center' },
 });

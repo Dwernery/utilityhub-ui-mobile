@@ -70,47 +70,56 @@ export function categorySections(categories: ExpandedCategory[], watched: Watche
   });
 }
 
-/**
- * Keep only unfinished titles (unwatched or partly watched), dropping cards and sections left
- * empty. Stats stay those of the whole section, so percentages don't change with the filter.
- */
-export function unfinishedOnly(sections: TrackerSection[], watched: WatchedMap): TrackerSection[] {
+/** Keep only titles passing `keep`, dropping cards and sections left empty. Stats stay whole-section. */
+function filterSections(sections: TrackerSection[], keep: (item: McuItem) => boolean): TrackerSection[] {
   return sections
     .map((section) => ({
       ...section,
       cards: section.cards
-        .map((card) => ({ ...card, items: card.items.filter((item) => !isItemComplete(item, watched)) }))
+        .map((card) => ({ ...card, items: card.items.filter(keep) }))
         .filter((card) => card.items.length > 0),
     }))
     .filter((section) => section.cards.length > 0);
 }
 
-export interface SearchResult {
-  item: McuItem;
-  /** Phase / category accent */
-  color: string;
+/**
+ * Keep only unfinished titles (unwatched or partly watched), dropping cards and sections left
+ * empty. Stats stay those of the whole section, so percentages don't change with the filter.
+ */
+export function unfinishedOnly(sections: TrackerSection[], watched: WatchedMap): TrackerSection[] {
+  return filterSections(sections, (item) => !isItemComplete(item, watched));
 }
 
 /**
- * Titles matching `query` (case-insensitive) across both views, in tracker order. A show matches
- * on its title or any episode title; each matching season is its own result.
+ * Keep only titles matching `query` (case-insensitive), like Library's search: a show matches
+ * on its title or any episode title. Empty cards and sections drop out; stats stay whole-section,
+ * as with "Not Finished". A blank query keeps everything.
  */
-export function searchItems(phases: Phase[], categories: ExpandedCategory[], query: string): SearchResult[] {
+export function matchingOnly(sections: TrackerSection[], query: string): TrackerSection[] {
   const q = query.trim().toLowerCase();
-  if (!q) return [];
-  const seen = new Set<string>();
-  const out: SearchResult[] = [];
-  for (const group of [...phases, ...categories]) {
-    for (const item of group.items) {
-      if (seen.has(item.globalId)) continue;
-      const hit =
-        item.title.toLowerCase().includes(q) ||
-        (item.type === 'tv' && item.episodes.some((e) => e.title.toLowerCase().includes(q)));
-      if (hit) {
-        seen.add(item.globalId);
-        out.push({ item, color: groupColor(group) });
-      }
-    }
+  if (!q) return sections;
+  return filterSections(
+    sections,
+    (item) =>
+      item.title.toLowerCase().includes(q) ||
+      (item.type === 'tv' && item.episodes.some((e) => e.title.toLowerCase().includes(q))),
+  );
+}
+
+/** How many titles (posters) the sections list. */
+export function countItems(sections: TrackerSection[]): number {
+  return sections.reduce((n, s) => n + s.cards.reduce((m, c) => m + c.items.length, 0), 0);
+}
+
+/**
+ * Every section and card open, so a search match isn't hidden in a collapsed phase, with
+ * `overrides` (what was toggled during this search) on top.
+ */
+export function allExpanded(sections: TrackerSection[], overrides: Record<string, boolean> = {}): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
+  for (const s of sections) {
+    out[s.key] = overrides[s.key] ?? true;
+    for (const c of s.cards) out[c.key] = overrides[c.key] ?? true;
   }
   return out;
 }
