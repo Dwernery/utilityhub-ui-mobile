@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { HeroCard, MonthlyList } from '@/components/finance/dashboard-parts';
 import { FinanceSwitcher, YearSegments } from '@/components/finance/finance-switcher';
@@ -10,6 +9,7 @@ import { describeSeries, formatThousands, LineChart } from '@/components/ui/char
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { accentHex, accents, colors, spacing, type } from '@/constants/theme';
 import { useIsWide } from '@/hooks/use-is-wide';
+import { useLayoutKey } from '@/hooks/use-layout-key';
 import { useNetWorthHistory } from '@/lib/finance/hooks';
 import { Currencyformatter } from '@/lib/finance/utils/currency';
 import { getMonthlyChartData, getYears } from '@/lib/finance/utils/metrics';
@@ -22,13 +22,9 @@ const CHART_HEIGHT = 230;
 export default function Dashboard() {
   const { data: history, isPending, isError, error, refetch, isRefetching } = useNetWorthHistory();
   const wide = useIsWide();
-  // Rotating or unfolding with this screen open (seen on the iPhone Duo, whose side chrome moves)
-  // left the month list running under the side chrome, though the same screen laid out fresh is
-  // right. Not reproducible without a Duo, so: lay the screen out fresh whenever the usable width
-  // changes. With the summary always open on wide screens, only the scroll position resets.
-  const { width: windowWidth } = useWindowDimensions();
-  const safe = useSafeAreaInsets();
-  const layoutKey = String(Math.round(windowWidth - safe.left - safe.right));
+  // Lay out fresh after rotating/unfolding (see useLayoutKey). With the summary always open on
+  // wide screens, only the scroll position resets.
+  const layoutKey = useLayoutKey();
   const years = useMemo(() => getYears(history), [history]);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const year = selectedYear ?? years.at(-1) ?? null;

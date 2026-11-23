@@ -48,7 +48,7 @@ A route is ✅ when it matches the running web app's **content and behavior** on
 - [x] `/finances/dashboard`: Dashboard/Expenses/History segmented control, year segments, blue hero (net worth, YoY, expandable year stats), SVG net-worth chart, 12-month list (current month highlighted). Hero $289,042.71 / +$45,043.66 / +18.5% matches Home
 - [x] `/finances/month/[key]`: derived live from the net-worth query (refetches after each change); tap an account for Edit Balance (decimal-pad prompt) or Remove; + lists accounts not yet in the month plus "New Account…" (name → type → balance)
 - [x] `/finances/income-expenses` + `/finances/transaction/[id]`: 4 tiles, All/Paid/Unpaid filter, quick paid toggle per row, edit sheet (name/amount/paid switch), "Clear All Paid" in the header menu with confirmation. Totals checked against the API ($8,786 / $7,371 / $175 / $1,415)
-- [x] `/finances/income-history` + `/finances/income/[id]`: year chips with "+ Year" prompt, sources, total, YoY (2026 vs 2025: -$90,000 / -81.8%, checked), add/edit/delete sheet
+- [x] `/finances/income-history` + `/finances/income/[id]`: year chips with "+ Year" prompt, sources, total, YoY (2026 vs 2025: -$90,000 / -81.8%, checked), add/edit/delete sheet; an "Income by year" bar chart (iPhone only; tap a bar to pick that year): under the sources on phones, beside them on wide layouts at the same height as the income card
 
 ## Phase 6: Polish & ship (personal install, not App Store)
 - [x] App name "Project SHIELD", bundle ID `com.dwernery.projectshield`

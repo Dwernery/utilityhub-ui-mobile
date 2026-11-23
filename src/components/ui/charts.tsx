@@ -222,7 +222,9 @@ function niceTicks(min: number, max: number, step: number) {
 
 // ── Bar chart ──────────────────────────────────────────────────────────────
 
-interface BarChartProps extends BaseChartProps {
+interface BarChartProps extends Omit<BaseChartProps, 'height'> {
+  /** A fixed height, or 'fill' to take the height its parent gives it (see LineChart). */
+  height?: number | 'fill';
   tint: ColorValue;
   /** Label of a bar to emphasize (others are dimmed), e.g. the selected year. */
   highlight?: string | null;
@@ -299,12 +301,29 @@ export function BarChart({
   formatValue = String,
   unit = '',
 }: BarChartProps) {
-  if (data.length === 0) return <EmptyChart height={height} text={emptyText} />;
+  const fill = height === 'fill';
+  // Filling: draw at the measured height (rounded down, so the chart can never push its parent taller).
+  const [measuredH, setMeasuredH] = useState(0);
+  const chartH = fill ? measuredH : height;
+
+  if (data.length === 0)
+    return fill ? (
+      <View style={[styles.empty, styles.fill, style]}>
+        <Text style={[type.subheadline, { color: colors.secondaryLabel }]}>{emptyText}</Text>
+      </View>
+    ) : (
+      <EmptyChart height={height} text={emptyText} />
+    );
   const max = Math.max(...data.map((d) => d.value), 0);
-  const plotH = height - BAR_LABEL - AXIS_LABEL;
+  const plotH = Math.max(0, chartH - BAR_LABEL - AXIS_LABEL);
 
   return (
-    <View style={[{ height }, style]} accessibilityLabel={accessibilityLabel}>
+    <View
+      style={[fill ? styles.fill : { height }, style]}
+      onLayout={fill ? (e) => setMeasuredH(Math.floor(e.nativeEvent.layout.height)) : undefined}
+      accessibilityLabel={accessibilityLabel}>
+      {chartH > 0 && (
+      <>
       <View style={[styles.baseline, { top: BAR_LABEL + plotH }]} />
       <View style={styles.bars}>
         {data.map((d) => {
@@ -332,6 +351,8 @@ export function BarChart({
           );
         })}
       </View>
+      </>
+      )}
     </View>
   );
 }

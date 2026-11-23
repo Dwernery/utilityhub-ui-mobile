@@ -10,6 +10,7 @@ import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { accents, colors, radius, spacing, tabularNums, type } from '@/constants/theme';
 import { useToast } from '@/context/toast';
 import { useIsWide } from '@/hooks/use-is-wide';
+import { useLayoutKey } from '@/hooks/use-layout-key';
 import { useIncomeSources } from '@/lib/finance/hooks';
 import { Currencyformatter } from '@/lib/finance/utils/currency';
 import { Skeleton, SkeletonCard } from '@/components/ui/skeleton';
@@ -27,6 +28,8 @@ export default function IncomeHistory() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const year = selectedYear ?? available.at(-1) ?? null;
   const wide = useIsWide();
+  // Lay out fresh after rotating/unfolding (see useLayoutKey): the columns kept stale proportions.
+  const layoutKey = useLayoutKey();
   const yearTotals = years.map((y) => ({ label: String(y), value: getYearTotal(sources, y) }));
 
   const list = year ? getSourcesForYear(sources, year) : [];
@@ -65,6 +68,7 @@ export default function IncomeHistory() {
         </Stack.Toolbar>
       )}
       <ScreenScrollView
+        key={layoutKey}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />}>
         <FinanceSwitcher current="History" />
@@ -97,10 +101,12 @@ export default function IncomeHistory() {
           <>
             <YearSegments years={available} selected={year} onSelect={setSelectedYear} />
 
-            {/* Wide: the year's sources beside an all-years total chart. */}
-            <View style={wide ? styles.columns : undefined}>
+            {/* Wide: the year's sources beside an all-years total chart, both cards the same height:
+                the chart fills its card, which stretches to the income card (or a minimum height).
+                Narrower: one column, the chart under the sources at a fixed height. */}
+            <View style={wide ? styles.columns : styles.stack}>
               <View style={wide ? styles.mainCol : undefined}>
-                <Card padded={false}>
+                <Card padded={false} style={wide && styles.grow}>
                   <View style={styles.cardHeader}>
                     <Text style={[type.title3, { color: colors.label, flex: 1 }]}>Income — {year}</Text>
                     <Pressable
@@ -147,29 +153,20 @@ export default function IncomeHistory() {
                   </View>
                 </Card>
               </View>
-              {wide && yearTotals.length > 0 && (
-                <View style={styles.sideCol}>
-                  <Card>
+              {yearTotals.length > 0 && (
+                <View style={wide ? styles.sideCol : undefined}>
+                  <Card style={wide && styles.grow}>
                     <Text style={[type.headline, { color: colors.label, marginBottom: spacing.md }]}>Income by year</Text>
                     <BarChart
                       data={yearTotals}
                       tint={accents.finances}
                       highlight={year != null ? String(year) : null}
-                      height={240}
+                      height={wide ? 'fill' : 220}
+                      style={wide && styles.chartMin}
                       accessibilityLabel={`Income by year: ${describeSeries(yearTotals, fmt)}`}
                       formatValue={formatThousands}
                       onSelect={(label) => setSelectedYear(Number(label))}
                     />
-                    <View style={styles.yearTotals}>
-                      {yearTotals.map((t) => (
-                        <View key={t.label} style={styles.yearTotalRow}>
-                          <Text style={[type.subheadline, tabularNums, { color: t.label === String(year) ? colors.label : colors.secondaryLabel, fontWeight: '600' }]}>
-                            {t.label}
-                          </Text>
-                          <Text style={[type.subheadline, tabularNums, { color: colors.positive, fontWeight: '600' }]}>{fmt(t.value)}</Text>
-                        </View>
-                      ))}
-                    </View>
                   </Card>
                 </View>
               )}
@@ -194,11 +191,14 @@ const styles = StyleSheet.create({
     backgroundColor: accents.finances,
   },
   skeleton: { gap: spacing.lg },
-  columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
+  stack: { gap: spacing.lg },
+  // Columns stretch to the taller one; each card fills its column, so both end flush.
+  columns: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.lg },
   mainCol: { flex: 1.3, minWidth: 0 },
   sideCol: { flex: 1, minWidth: 0 },
-  yearTotals: { marginTop: spacing.md, gap: spacing.xs },
-  yearTotalRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  grow: { flex: 1 },
+  /** Keeps the bars readable when the income card is short (few sources). */
+  chartMin: { minHeight: 220 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.lg },
   addButton: {
     flexDirection: 'row',
