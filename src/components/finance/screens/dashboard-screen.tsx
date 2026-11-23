@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DETAILS_MS, HeroCard, MonthlyList } from '@/components/finance/dashboard-parts';
-import { useEasedNumber } from '@/hooks/use-eased-number';
+import { HeroCard, MonthlyList } from '@/components/finance/dashboard-parts';
 import { FinanceSwitcher, YearSegments } from '@/components/finance/finance-switcher';
 import { Card } from '@/components/ui/card';
 import { describeSeries, formatThousands, LineChart } from '@/components/ui/charts';
@@ -16,27 +16,28 @@ import { getMonthlyChartData, getYears } from '@/lib/finance/utils/metrics';
 import { Skeleton, SkeletonCard, SkeletonListGroup } from '@/components/ui/skeleton';
 import { buildMonthlyRows } from '@/lib/finance/utils/monthly';
 
-/** Smallest the wide-layout chart may shrink to before the left column grows past the month list. */
-const MIN_CHART = 160;
+/** Chart height in the stacked (phone) layout. Wide, the chart fills the space beside the month list. */
+const CHART_HEIGHT = 230;
 
 export default function Dashboard() {
   const { data: history, isPending, isError, error, refetch, isRefetching } = useNetWorthHistory();
   const wide = useIsWide();
+  // Rotating or unfolding with this screen open (seen on the iPhone Duo, whose side chrome moves)
+  // left the month list running under the side chrome, though the same screen laid out fresh is
+  // right. Not reproducible without a Duo, so: lay the screen out fresh whenever the usable width
+  // changes. With the summary always open on wide screens, only the scroll position resets.
+  const { width: windowWidth } = useWindowDimensions();
+  const safe = useSafeAreaInsets();
+  const layoutKey = String(Math.round(windowWidth - safe.left - safe.right));
   const years = useMemo(() => getYears(history), [history]);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  /** Space left for the chart in the wide layout (measured). */
-  const [chartHeight, setChartHeight] = useState(MIN_CHART);
-  const [measures, setMeasures] = useState(0);
-  // Ease the chart to its new height (e.g. when the hero details open) instead of snapping, but take
-  // the first measurement as-is so the page doesn't animate on load.
-  const easedChartHeight = useEasedNumber(chartHeight, measures <= 1 ? 0 : DETAILS_MS);
   const year = selectedYear ?? years.at(-1) ?? null;
 
   const chart = useMemo(
     () => (year ? getMonthlyChartData(history, year).map((d) => ({ label: d.month.slice(0, 3), value: d.netWorth })) : []),
     [history, year],
   );
-  const chartView = (height: number) => (
+  const chartView = (height: number | 'fill') => (
     <LineChart
       data={chart}
       tint={accentHex.library /* the web graph is blue */}
@@ -52,6 +53,7 @@ export default function Dashboard() {
 
   return (
     <ScreenScrollView
+      key={layoutKey}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />}>
       <FinanceSwitcher current="Dashboard" />
@@ -81,27 +83,14 @@ export default function Dashboard() {
       ) : (
         <>
           <YearSegments years={years} selected={year} onSelect={setSelectedYear} />
-          {/* Wide: summary + chart on the left, month list on the right (the web's desktop layout). */}
-          {/* Wide: columns stretch to the month list's height, and the chart card grows to fill the
-              rest of the left column so both columns end flush. */}
+          {/* Wide: summary + chart on the left, month list on the right (the web's desktop layout).
+              Both columns end flush: the month list is always 12 rows, the summary always shows its
+              details (no toggle), and the chart fills what's left. Nothing changes height, so
+              rotating or unfolding lays out the same as opening the screen fresh. */}
           <View style={wide ? [styles.columns, styles.stretch] : styles.stack}>
             <View style={[styles.stack, wide && styles.mainCol]}>
-              <HeroCard history={history} year={year} />
-              <Card style={wide ? styles.grow : undefined}>
-                {wide ? (
-                  // The chart is absolutely positioned so it never sets the column height itself: the
-                  // row takes the month list's height, and the chart fills whatever is left (shrinking
-                  // when "Show details" opens) instead of pushing everything down.
-                  <View style={styles.chartSlot} onLayout={(e) => {
-                      setChartHeight(Math.round(e.nativeEvent.layout.height));
-                      setMeasures((n) => n + 1);
-                    }}>
-                    <View style={StyleSheet.absoluteFill}>{chartView(Math.max(easedChartHeight, MIN_CHART))}</View>
-                  </View>
-                ) : (
-                  chartView(230)
-                )}
-              </Card>
+              <HeroCard history={history} year={year} alwaysOpen={wide} />
+              <Card style={wide && styles.grow}>{chartView(wide ? 'fill' : CHART_HEIGHT)}</Card>
             </View>
             <View style={wide ? styles.sideCol : undefined}>
               <MonthlyList
@@ -124,6 +113,5 @@ const styles = StyleSheet.create({
   mainCol: { flex: 1.4, minWidth: 0 },
   sideCol: { flex: 1, minWidth: 0 },
   stretch: { alignItems: 'stretch' },
-  grow: { flex: 1 },
-  chartSlot: { flex: 1, minHeight: MIN_CHART },
+  grow: { flex: 1, minHeight: 200 },
 });

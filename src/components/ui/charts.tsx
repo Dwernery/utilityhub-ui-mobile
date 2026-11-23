@@ -41,7 +41,12 @@ function EmptyChart({ height, text }: { height: number; text: string }) {
 
 // ── Line chart ─────────────────────────────────────────────────────────────
 
-interface LineChartProps extends BaseChartProps {
+interface LineChartProps extends Omit<BaseChartProps, 'height'> {
+  /**
+   * A fixed height, or 'fill' to take the height its parent gives it (measured, like the width).
+   * With 'fill' the parent must size it (e.g. `flex: 1` in a stretched column).
+   */
+  height?: number | 'fill';
   /** Hex color (SVG needs a concrete color). */
   tint: string;
   /** Y axis snaps to multiples of this around the data (web used 10,000). */
@@ -67,10 +72,21 @@ export function LineChart({
   accessibilityLabel,
   style,
 }: LineChartProps) {
-  const [width, setWidth] = useState(0);
+  const [size, setSize] = useState({ width: 0, height: 0 });
   const [selected, setSelected] = useState<number | null>(null);
+  const fill = height === 'fill';
+  const width = size.width;
+  // Filling: draw at the measured height (rounded down, so the chart can never push its parent taller).
+  const chartH = fill ? size.height : height;
 
-  if (data.length === 0) return <EmptyChart height={height} text={emptyText} />;
+  if (data.length === 0)
+    return fill ? (
+      <View style={[styles.empty, styles.fill, style]}>
+        <Text style={[type.subheadline, { color: colors.secondaryLabel }]}>{emptyText}</Text>
+      </View>
+    ) : (
+      <EmptyChart height={height} text={emptyText} />
+    );
 
   const values = data.map((d) => d.value);
   let yMin = Math.floor(Math.min(...values) / yStep) * yStep;
@@ -82,7 +98,7 @@ export function LineChart({
   const ticks = niceTicks(yMin, yMax, yStep);
 
   const plotW = Math.max(0, width - Y_AXIS_WIDTH);
-  const plotH = height - X_AXIS_HEIGHT - PAD_TOP;
+  const plotH = Math.max(0, chartH - X_AXIS_HEIGHT - PAD_TOP);
   const innerW = Math.max(0, plotW - PAD_X * 2);
   const step = data.length > 1 ? innerW / (data.length - 1) : 0;
   const xAt = (i: number) => (data.length > 1 ? PAD_X + i * step : plotW / 2);
@@ -101,17 +117,20 @@ export function LineChart({
     }
   };
 
-  const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
+  const onLayout = (e: LayoutChangeEvent) => {
+    const next = { width: e.nativeEvent.layout.width, height: Math.floor(e.nativeEvent.layout.height) };
+    setSize((prev) => (prev.width === next.width && prev.height === next.height ? prev : next));
+  };
   const sel = selected != null ? data[selected] : null;
 
   return (
     <View
-      style={[{ height }, style]}
+      style={[fill ? styles.fill : { height }, style]}
       onLayout={onLayout}
       accessible
       accessibilityRole="image"
       accessibilityLabel={accessibilityLabel}>
-      {width > 0 && (
+      {width > 0 && chartH > 0 && (
         <>
           {/* Y grid + labels (RN views so they use semantic colors) */}
           {ticks.map((t) => (
@@ -132,7 +151,7 @@ export function LineChart({
             onResponderMove={(e) => pick(e.nativeEvent.locationX)}
             onResponderRelease={() => setSelected(null)}
             onResponderTerminate={() => setSelected(null)}>
-            <Svg width={plotW} height={height - X_AXIS_HEIGHT}>
+            <Svg width={plotW} height={chartH - X_AXIS_HEIGHT}>
               <Defs>
                 <LinearGradient id="area" x1="0" y1="0" x2="0" y2="1">
                   <Stop offset="0" stopColor={tint} stopOpacity={0.22} />
@@ -326,6 +345,7 @@ export function describeSeries(data: SeriesPoint[], format: (n: number) => strin
 export const formatThousands = (v: number) => '$' + Math.floor(v / 1000) + 'k';
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   bars: { flex: 1, flexDirection: 'row', gap: spacing.sm },
   barCol: { flex: 1, alignItems: 'center' },
   barArea: { width: '100%', alignItems: 'center', justifyContent: 'flex-end' },

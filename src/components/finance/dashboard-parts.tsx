@@ -26,19 +26,28 @@ function HeroStat({ label, value, tone }: { label: string; value: string; tone?:
   );
 }
 
-/** Net worth for the selected year with YoY change; year stats behind "Show details" (web HeroCard). */
-/** Duration of the hero details expand/collapse; the dashboard chart eases over the same time. */
-export const DETAILS_MS = 250;
+/** Duration of the hero details expand/collapse. */
+const DETAILS_MS = 250;
 
-export function HeroCard({ history, year }: { history: NetWorthEntry[] | undefined; year: number | null }) {
-  const [open, setOpen] = useState(false);
+/**
+ * Net worth for the selected year with YoY change; year stats behind "Show details" (web HeroCard).
+ * `alwaysOpen` (wide layouts) shows the stats with no toggle, so the card's height never changes and
+ * the chart beside the month list can fill a fixed space.
+ */
+export function HeroCard({ history, year, alwaysOpen = false }: {
+  history: NetWorthEntry[] | undefined;
+  year: number | null;
+  alwaysOpen?: boolean;
+}) {
+  const [toggled, setOpen] = useState(false);
+  const open = alwaysOpen || toggled;
   const { currentNetWorth, yoyChange, yoyPercentage } = getYearMetrics(history, year);
   const s = getYearStats(history, year);
   const up = yoyChange >= 0;
   const reduceMotion = useReducedMotion();
 
   return (
-    // The card animates its height when the details open/close (in step with the chart below).
+    // The card animates its height when the details open/close.
     <Animated.View style={styles.hero} layout={reduceMotion ? undefined : LinearTransition.duration(DETAILS_MS)}>
       <View style={styles.inline}>
         <SymbolView name="dollarsign.circle.fill" size={16} tintColor={financeSurfaces.onHero.secondary} />
@@ -56,6 +65,7 @@ export function HeroCard({ history, year }: { history: NetWorthEntry[] | undefin
       </View>
 
       <View style={styles.heroDivider} />
+      {!alwaysOpen && (
       <Pressable
         onPress={() => {
           haptics.selection();
@@ -68,10 +78,11 @@ export function HeroCard({ history, year }: { history: NetWorthEntry[] | undefin
         <Text style={styles.heroStatLabel}>{open ? 'HIDE DETAILS' : 'SHOW DETAILS'}</Text>
         <SymbolView name={open ? 'chevron.up' : 'chevron.down'} size={12} weight="semibold" tintColor={financeSurfaces.onHero.tertiary} />
       </Pressable>
+      )}
       {open && (
         <Animated.View
           style={styles.heroGrid}
-          entering={reduceMotion ? undefined : FadeIn.duration(DETAILS_MS)}
+          entering={reduceMotion || alwaysOpen ? undefined : FadeIn.duration(DETAILS_MS)}
           exiting={reduceMotion ? undefined : FadeOut.duration(DETAILS_MS / 2)}>
           <HeroStat label="Year High" value={fmt(s.highest)} />
           <HeroStat label="Year Low" value={fmt(s.lowest)} />
