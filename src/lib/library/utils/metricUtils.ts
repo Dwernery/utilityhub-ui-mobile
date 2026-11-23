@@ -1,5 +1,6 @@
 import type { Book, StatusFilter } from '../types';
 import { parseLocalDate } from '@/lib/dates';
+import { byInventoryOrder } from './series';
 
 export const filterBooks = (books: Book[], normalizedSearch: string, statusFilter: StatusFilter): Book[] =>
   books.filter((book) => {
@@ -18,14 +19,18 @@ export const filterBooks = (books: Book[], normalizedSearch: string, statusFilte
     return matchesSearch && matchesStatus;
   });
 
-/** Group books by author, authors sorted alphabetically. */
+/** Group books by author, authors A–Z; each author's books with each series together (see byInventoryOrder). */
 export const groupBooks = (filteredBooks: Book[]): Record<string, Book[]> => {
   const groups: Record<string, Book[]> = {};
   for (const book of filteredBooks) {
     const authorName = book.authorName || 'Unknown';
     (groups[authorName] ??= []).push(book);
   }
-  return Object.fromEntries(Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)));
+  return Object.fromEntries(
+    Object.entries(groups)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([author, list]) => [author, list.sort(byInventoryOrder)]),
+  );
 };
 
 export interface YearTotals {

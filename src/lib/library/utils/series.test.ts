@@ -1,4 +1,4 @@
-import { bySeriesOrder, nextSeriesPosition, parseSeriesPosition, seriesLabel } from './series';
+import { byInventoryOrder, bySeriesOrder, nextSeriesPosition, parseSeriesPosition, seriesLabel } from './series';
 
 // Mirrors utility-hub-ui's domains/library/utils/series.test.js.
 describe('seriesLabel', () => {
@@ -40,5 +40,26 @@ describe('parseSeriesPosition', () => {
     expect(parseSeriesPosition('0')).toBe('invalid');
     expect(parseSeriesPosition('2.5')).toBe('invalid');
     expect(parseSeriesPosition('1000')).toBe('invalid');
+  });
+});
+
+describe('byInventoryOrder', () => {
+  it('puts each series together in number order, series A–Z, then standalones A–Z', () => {
+    const books = [
+      { id: 1, title: 'Warbreaker', seriesName: null, seriesPosition: null },
+      { id: 2, title: 'The Way of Kings', seriesName: 'Stormlight', seriesPosition: 1 },
+      { id: 3, title: 'The Hero of Ages', seriesName: 'Mistborn', seriesPosition: 3 },
+      { id: 4, title: 'Elantris', seriesName: null, seriesPosition: null },
+      { id: 5, title: 'The Final Empire', seriesName: 'Mistborn', seriesPosition: 1 },
+      { id: 6, title: 'The Well of Ascension', seriesName: 'Mistborn', seriesPosition: 2 },
+    ];
+    expect([...books].sort(byInventoryOrder).map((b) => b.title)).toEqual([
+      'The Final Empire',
+      'The Well of Ascension',
+      'The Hero of Ages',
+      'The Way of Kings',
+      'Elantris',
+      'Warbreaker',
+    ]);
   });
 });
