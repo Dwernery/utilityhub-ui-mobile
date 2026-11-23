@@ -9,6 +9,7 @@ import { accents, colors, radius, spacing, type } from '@/constants/theme';
 import { useBooks, useStartReading } from '@/lib/library/hooks';
 import type { Book } from '@/lib/library/types';
 import { LoadError } from '@/components/ui/load-error';
+import { seriesLabel } from '@/lib/library/utils/series';
 import { SkeletonListGroup } from '@/components/ui/skeleton';
 
 /** Pick an unread book to start (ported from StartReadingModal; opened from Metrics → Currently Reading). */
@@ -79,7 +80,7 @@ export default function StartReading() {
               </Text>
               {item.seriesName ? (
                 <Text style={[type.footnote, { color: accents.library }]} numberOfLines={1}>
-                  {item.seriesName}
+                  {seriesLabel(item)}
                 </Text>
               ) : null}
             </View>

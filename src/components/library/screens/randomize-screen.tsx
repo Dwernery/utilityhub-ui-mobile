@@ -223,10 +223,10 @@ function PickResult({ pick, seriesSizes, spinning, onStart, onReroll }: {
         <View style={{ gap: spacing.sm }}>
           <Text style={[type.footnote, { color: colors.secondaryLabel, fontWeight: '600' }]}>Series books</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.seriesStrip}>
-            {seriesBooks.map((b, i) => (
+            {seriesBooks.map((b) => (
               <View key={b.id} style={styles.seriesItem}>
                 <BookCover book={b} width={64} />
-                <Text style={[type.caption1, { color: colors.secondaryLabel, fontWeight: '600' }]}>{i + 1}</Text>
+                <Text style={[type.caption1, { color: colors.secondaryLabel, fontWeight: '600' }]}>{b.seriesPosition ? `#${b.seriesPosition}` : ''}</Text>
                 <Text style={[type.caption2, { color: colors.secondaryLabel, textAlign: 'center' }]} numberOfLines={2}>
                   {b.title}
                 </Text>

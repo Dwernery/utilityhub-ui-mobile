@@ -7,6 +7,8 @@ export interface Book {
   title: string;
   authorName: string;
   seriesName: string | null;
+  /** The book's number in its series (1, 2, 3…); null without a series or when not set. */
+  seriesPosition: number | null;
   pages: number;
   currentPage: number | null;
   status: BookStatus;
@@ -41,6 +43,7 @@ export interface NewBookInput {
   pages?: number | string | null;
   authorName: string;
   seriesName?: string | null;
+  seriesPosition?: number | null;
 }
 
 /** PATCH payload — only defined fields are sent. */
@@ -48,6 +51,7 @@ export type BookUpdate = { id: number } & Partial<{
   title: string;
   authorName: string;
   seriesName: string | null;
+  seriesPosition: number | null;
   pages: number | string | null;
   currentPage: number | string | null;
   status: BookStatus;

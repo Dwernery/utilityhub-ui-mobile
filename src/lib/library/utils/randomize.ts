@@ -1,4 +1,5 @@
 import type { Book } from '../types';
+import { bySeriesOrder } from './series';
 
 export type RandomCategory = 'standalone' | 'short' | 'long';
 
@@ -48,8 +49,9 @@ export function buildRandomPools(books: Book[]) {
   const groupsFor = (cat: 'short' | 'long'): SeriesGroup[] =>
     [...new Set(pools[cat].map((b) => b.seriesName!))]
       .map((series) => {
-        // Series order = creation order (the web sorted by id).
-        const list = bySeries[series].slice().sort((a, b) => Number(a.id) - Number(b.id));
+        // Series order: by number, then any without one in the order they were added. The first
+        // is where a picked series starts.
+        const list = bySeries[series].slice().sort(bySeriesOrder);
         return { series, firstBook: list[0], books: list, totalInSeries: seriesSizes[series] };
       })
       .sort((a, b) => a.series.localeCompare(b.series));

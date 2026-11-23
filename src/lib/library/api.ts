@@ -49,7 +49,7 @@ export async function createSeries(seriesName: string) {
   return { name: series.name };
 }
 
-export function addBook({ title, pages, authorName, seriesName }: NewBookInput) {
+export function addBook({ title, pages, authorName, seriesName, seriesPosition }: NewBookInput) {
   return requestJson<Book>('/api/library/books', {
     method: 'POST',
     body: {
@@ -57,6 +57,8 @@ export function addBook({ title, pages, authorName, seriesName }: NewBookInput) 
       pages: pages === '' || pages === null || pages === undefined ? null : Number(pages),
       authorName,
       seriesName: seriesName || null,
+      // A number only means something within a series (the API drops it otherwise too).
+      seriesPosition: seriesName ? (seriesPosition ?? null) : null,
     },
     errorMessage: 'Failed to create book',
     includeErrorDetail: true,

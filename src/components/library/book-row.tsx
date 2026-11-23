@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { accents, colors, radius, spacing, tabularNums, type } from '@/constants/theme';
 import type { Book, BookStatus } from '@/lib/library/types';
+import { seriesLabel } from '@/lib/library/utils/series';
 
 import { BookCover } from './book-cover';
 import { StarRating } from './star-rating';
@@ -46,7 +47,9 @@ export const BookRow = memo(function BookRow({
       accessibilityRole="button"
       accessibilityLabel={[
         book.title,
-        secondary === 'author' ? `by ${book.authorName}` : book.seriesName,
+        secondary === 'author'
+          ? [book.seriesPosition ? `number ${book.seriesPosition}` : null, `by ${book.authorName}`].filter(Boolean).join(', ')
+          : seriesLabel(book),
         status.label,
         book.rating ? `${book.rating} stars` : null,
         book.pages ? `${book.pages} pages` : null,
@@ -72,12 +75,12 @@ export const BookRow = memo(function BookRow({
             hitSlop={{ top: 4, bottom: 4 }}
             accessibilityRole="link">
             <Text style={[type.footnote, { color: accents.library }]} numberOfLines={1}>
-              {book.seriesName}
+              {seriesLabel(book)}
             </Text>
           </Pressable>
         ) : secondary === 'author' ? (
           <Text style={[type.footnote, { color: colors.secondaryLabel }]} numberOfLines={1}>
-            by {book.authorName}
+            {book.seriesPosition ? `#${book.seriesPosition} · ` : ''}by {book.authorName}
           </Text>
         ) : null}
         {(book.rating ?? 0) > 0 && <StarRating value={book.rating} readonly size="sm" />}

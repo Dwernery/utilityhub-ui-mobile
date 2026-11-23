@@ -9,6 +9,7 @@ import { useToast } from '@/context/toast';
 import { useBook, useS3Upload, useUpdateBook } from '@/lib/library/hooks';
 import type { Book, BookUpdate } from '@/lib/library/types';
 import { BOOK_VALIDATION_MESSAGE, isBookValid } from '@/lib/library/utils/bookValidation';
+import { parseSeriesPosition } from '@/lib/library/utils/series';
 import type { PickedFile } from '@/lib/library/utils/s3Upload';
 import { parseIdParam } from '@/lib/routeParams';
 
@@ -16,6 +17,7 @@ const toDraft = (b: Book): BookDraft => ({
   title: b.title ?? '',
   authorName: b.authorName ?? '',
   seriesName: b.seriesName ?? '',
+  seriesPosition: b.seriesPosition != null ? String(b.seriesPosition) : '',
   pages: b.pages != null ? String(b.pages) : '',
   status: b.status,
   startDate: b.startDate ?? null,
@@ -28,6 +30,8 @@ const normalize = (d: BookDraft) => ({
   pages: d.pages === '' ? null : Number(d.pages),
   authorName: d.authorName.trim(),
   seriesName: d.seriesName.trim() || null,
+  // No series, no number; 'invalid' is caught on save.
+  seriesPosition: d.seriesName.trim() ? parseSeriesPosition(d.seriesPosition) : null,
   status: d.status,
   startDate: d.startDate || null,
   endDate: d.endDate || null,
@@ -68,6 +72,7 @@ function EditBookForm({ book }: { book: Book }) {
 
   const save = async () => {
     if (!isBookValid(draft)) return addToast(BOOK_VALIDATION_MESSAGE, 'error');
+    if (current.seriesPosition === 'invalid') return addToast('Book # must be a whole number from 1 to 999', 'error');
     if (draft.status === 'IN_PROGRESS' && !draft.startDate)
       return addToast('Start date is required when status is In-Progress', 'error');
     if (draft.status === 'READ' && !draft.startDate) return addToast('Start date is required when status is Read', 'error');

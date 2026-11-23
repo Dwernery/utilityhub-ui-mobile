@@ -8,6 +8,8 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { FormControlRow, FormSection, FormTextField, FormValueRow } from '@/components/ui/form';
 import { accents, colors, spacing } from '@/constants/theme';
 import { haptics } from '@/lib/haptics';
+import { useBooks } from '@/lib/library/hooks';
+import { nextSeriesPosition } from '@/lib/library/utils/series';
 import { useLibrary } from '@/lib/library/context';
 import type { BookStatus } from '@/lib/library/types';
 import { parseLocalDate, toIsoDate, todayIso } from '@/lib/dates';
@@ -19,6 +21,8 @@ export interface BookDraft {
   title: string;
   authorName: string;
   seriesName: string;
+  /** "Book #" in the series, as typed (digits only); '' for none. */
+  seriesPosition: string;
   pages: string;
   status: BookStatus;
   startDate: string | null;
@@ -88,6 +92,7 @@ interface BookFormProps {
 /** Shared Add/Edit book form (the web's AddBookForm + EditBookForm). Edit also shows status and dates. */
 export function BookForm({ mode, draft, setDraft, busy, file, setFile, isUploading, uploadProgress }: BookFormProps) {
   const { openPicker } = useLibrary();
+  const { data: books = [] } = useBooks();
   // Full-height sheets reach the top of the screen, where side chrome (e.g. the iPhone Duo's
   // status bar and the sheet's own toolbar rail) sits, so keep clear of the side insets here.
   const insets = useSafeAreaInsets();
@@ -129,9 +134,33 @@ export function BookForm({ mode, draft, setDraft, busy, file, setFile, isUploadi
             placeholder="None"
             disabled={busy}
             onPress={() =>
-              openPicker({ field: 'series', value: draft.seriesName, onSelect: (v) => set('seriesName', v) })
+              openPicker({
+                field: 'series',
+                value: draft.seriesName,
+                onSelect: (v) =>
+                  setDraft((d) => ({
+                    ...d,
+                    seriesName: v,
+                    // No series, no number. A new series choice suggests the next number in it.
+                    seriesPosition: !v
+                      ? ''
+                      : v !== d.seriesName || !d.seriesPosition
+                        ? String(nextSeriesPosition(books, v))
+                        : d.seriesPosition,
+                  })),
+              })
             }
           />
+          {draft.seriesName ? (
+            <FormTextField
+              label="Book #"
+              value={draft.seriesPosition}
+              onChangeText={(t) => set('seriesPosition', t.replace(/[^0-9]/g, '').slice(0, 3))}
+              placeholder="—"
+              keyboardType="number-pad"
+              editable={!busy}
+            />
+          ) : null}
           <FormTextField
             label="Pages"
             required

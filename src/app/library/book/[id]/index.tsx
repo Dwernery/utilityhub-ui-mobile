@@ -14,6 +14,7 @@ import { useToast } from '@/context/toast';
 import { haptics } from '@/lib/haptics';
 import { useBook, useDeleteBook, useUpdateBook } from '@/lib/library/hooks';
 import { formatDate } from '@/lib/dates';
+import { seriesLabel } from '@/lib/library/utils/series';
 import { parseIdParam } from '@/lib/routeParams';
 
 const STATUS_TEXT = { READ: 'Finished', IN_PROGRESS: 'Reading', UNREAD: 'Unread' } as const;
@@ -127,7 +128,7 @@ export default function BookDetail() {
                 onPress={() => router.push({ pathname: '/library/series/[name]', params: { name: book.seriesName! } })}
                 accessibilityRole="link"
                 hitSlop={4}>
-                <Text style={[type.subheadline, { color: accents.library }]}>{book.seriesName}</Text>
+                <Text style={[type.subheadline, { color: accents.library }]}>{seriesLabel(book)}</Text>
               </Pressable>
             ) : null}
             <View style={styles.statusRow}>

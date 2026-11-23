@@ -5,12 +5,14 @@ import { BookForm, FormSheetToolbar, type BookDraft } from '@/components/library
 import { useToast } from '@/context/toast';
 import { useAddBook, useS3Upload } from '@/lib/library/hooks';
 import { BOOK_VALIDATION_MESSAGE, isBookValid } from '@/lib/library/utils/bookValidation';
+import { parseSeriesPosition } from '@/lib/library/utils/series';
 import type { PickedFile } from '@/lib/library/utils/s3Upload';
 
 const EMPTY: BookDraft = {
   title: '',
   authorName: '',
   seriesName: '',
+  seriesPosition: '',
   pages: '',
   status: 'UNREAD',
   startDate: null,
@@ -32,12 +34,18 @@ export default function AddBook() {
       addToast(BOOK_VALIDATION_MESSAGE, 'error');
       return;
     }
+    const seriesPosition = draft.seriesName.trim() ? parseSeriesPosition(draft.seriesPosition) : null;
+    if (seriesPosition === 'invalid') {
+      addToast('Book # must be a whole number from 1 to 999', 'error');
+      return;
+    }
     const title = draft.title.trim();
     try {
       const created = await addBook.mutateAsync({
         title,
         authorName: draft.authorName.trim(),
         seriesName: draft.seriesName.trim(),
+        seriesPosition,
         pages: draft.pages,
       });
 

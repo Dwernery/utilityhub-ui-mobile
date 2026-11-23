@@ -1,4 +1,5 @@
 import type { Book } from '../types';
+import { bySeriesOrder } from './series';
 
 const avgRatingOf = (books: Book[]) => {
   const rated = books.filter((b) => (b.rating ?? 0) > 0);
@@ -23,7 +24,8 @@ export function authorStats(books: Book[], author: string) {
 
 /** Stats for the series sheet (ported from SeriesDetailModal). */
 export function seriesStats(books: Book[], series: string) {
-  const seriesBooks = books.filter((b) => b.seriesName === series);
+  // In series order: by number, then any without one in the order they were added.
+  const seriesBooks = books.filter((b) => b.seriesName === series).sort(bySeriesOrder);
   const readBooks = seriesBooks.filter((b) => b.status === 'READ');
   return {
     books: seriesBooks,
