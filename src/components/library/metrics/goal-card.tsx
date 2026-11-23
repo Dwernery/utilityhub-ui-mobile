@@ -68,7 +68,8 @@ export function useGoalEditor(year: number) {
 
 /**
  * This year's reading goal: "18 of 25 · 2 ahead of pace", or nothing until one is set (from the
- * toolbar's goal menu). Tapping it edits the goal. The web shows its buttons in the card instead.
+ * toolbar's goal menu, which also edits it; the card itself isn't tappable). The web shows its
+ * buttons in the card instead.
  */
 export function GoalCard({ year, done, stacked = false, style }: {
   year: number;
@@ -77,23 +78,18 @@ export function GoalCard({ year, done, stacked = false, style }: {
   stacked?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
-  const { ready, goal, busy, edit } = useGoalEditor(year);
+  const { ready, goal } = useGoalEditor(year);
   if (!ready || !goal) return null;
 
   const progress = goalProgress(done, goal.target, year);
   const good = progress.status === 'met' || progress.status === 'ahead' || progress.status === 'onPace';
   const statusColor = good ? colors.positive : colors.secondaryLabel;
-  const a11y = `${year} goal: ${done} of ${goal.target} books, ${progress.label}. Double-tap to edit it.`;
 
   // Beside Currently Reading: "2026 Goal", then a ring with "18 / 25" inside and the status under it.
   if (stacked) {
     return (
-      // The tappable wrapper takes the row slot (`style`); the surface fills it, so heights match.
-      <Card
-        onPress={busy ? undefined : edit}
-        accessibilityLabel={a11y}
-        containerStyle={style}
-        style={styles.fill}>
+      // The wrapper takes the row slot (`style`); the surface fills it, so heights match.
+      <Card containerStyle={style} style={styles.fill}>
         <Text style={[type.headline, { color: colors.label }]}>{year} Goal</Text>
         {/* A ring fills the space under the title whatever height Currently Reading gives the row. */}
         <View style={styles.ringArea}>
@@ -111,7 +107,7 @@ export function GoalCard({ year, done, stacked = false, style }: {
 
   // Stacked layouts: two rows, "2026 Goal  18 of 25 · 2 ahead of pace", then a thin bar.
   return (
-    <Card onPress={busy ? undefined : edit} accessibilityLabel={a11y} style={style}>
+    <Card style={style}>
       <View style={styles.row}>
         <Text style={[type.headline, { color: colors.label }]}>{year} Goal</Text>
         <Text style={[type.subheadline, tabularNums, styles.summary]} numberOfLines={1}>

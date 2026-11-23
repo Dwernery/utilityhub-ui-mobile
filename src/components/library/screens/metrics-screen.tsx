@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   threeTiles: { flexGrow: 3, flexShrink: 1, flexBasis: spacing.sm * 2, minWidth: 0 },
   oneTile: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
   periodSection: { gap: spacing.md },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.opaqueSeparator, marginBottom: spacing.xs },
+  divider: { height: 1, backgroundColor: colors.divider, marginBottom: spacing.xs },
   tiles: { gap: spacing.sm },
   tileRow: { flexDirection: 'row', gap: spacing.sm },
   tile: { backgroundColor: colors.secondaryGroupedBackground },
