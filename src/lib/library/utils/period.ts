@@ -40,12 +40,11 @@ export interface PeriodStats extends PeriodTotals {
 }
 
 /**
- * Books, pages, average pages and average rating for all time (`year` null) or one year. A year also
- * gets `vs`, the change from the year before. For the current year that's the year before up to
- * the same date, so a year in progress isn't measured against a
- * whole one. `vs` is null when the year before has no finished books.
+ * Books, pages, average pages and average rating for all time (`year` null) or one year. A year
+ * also gets `vs`, the change from the whole year before; for the current year that's "so far vs
+ * all of last year". `vs` is null when the year before has no finished books.
  */
-export function periodStats(books: Book[], year: number | null, today = todayIso()): PeriodStats {
+export function periodStats(books: Book[], year: number | null): PeriodStats {
   const done = finished(books);
   if (year == null) return { ...summarize(done), vs: null };
 
@@ -54,9 +53,7 @@ export function periodStats(books: Book[], year: number | null, today = todayIso
   const prevAll = done.filter((b) => isoYear(b.endDate) === prevYear);
   if (prevAll.length === 0) return { ...stats, vs: null };
 
-  const toDate = year === isoYear(today);
-  const cutoff = `${prevYear}${today.slice(4)}`; // same month and day, last year
-  const prev = summarize(toDate ? prevAll.filter((b) => b.endDate <= cutoff) : prevAll);
+  const prev = summarize(prevAll);
   const ratingDiff = diff(stats.avgRating, prev.avgRating);
   return {
     ...stats,

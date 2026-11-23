@@ -10,6 +10,8 @@ export const colors = {
   secondaryLabel: Color.ios.secondaryLabel,
   tertiaryLabel: Color.ios.tertiaryLabel,
   separator: Color.ios.separator,
+  /** A little darker than `separator` (not see-through), for a line that should read as a section break. */
+  opaqueSeparator: Color.ios.opaqueSeparator,
   background: Color.ios.systemBackground,
   groupedBackground: Color.ios.systemGroupedBackground,
   secondaryGroupedBackground: Color.ios.secondarySystemGroupedBackground,
