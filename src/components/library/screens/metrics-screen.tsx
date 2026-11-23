@@ -1,9 +1,10 @@
+import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { LibrarySwitcher } from '@/components/library/library-switcher';
 import { CurrentlyReadingCard } from '@/components/library/metrics/currently-reading';
-import { GoalCard } from '@/components/library/metrics/goal-card';
+import { GoalCard, useGoalEditor } from '@/components/library/metrics/goal-card';
 import { PeriodPicker } from '@/components/library/metrics/period-picker';
 import { YearChartCard, YearDetailsCard } from '@/components/library/metrics/year-sections';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
@@ -26,6 +27,7 @@ export default function Metrics() {
   const years = useMemo(() => periodYears(books), [books]);
   const stats = useMemo(() => periodStats(books, period), [books, period]);
   const thisYear = new Date().getFullYear();
+  const goalEditor = useGoalEditor(thisYear);
 
   // Up is green, down is red, for books, pages and rating; longer or shorter books aren't better or worse.
   const tone = (n: number | null | undefined, neutral = false) =>
@@ -41,6 +43,23 @@ export default function Metrics() {
   );
 
   return (
+    <>
+      {/* Like Inventory's Filter and +: Start Reading, and this year's goal. The web keeps these in the cards. */}
+      <Stack.Toolbar placement="right">
+        {goalEditor.ready ? (
+          <Stack.Toolbar.Menu icon="target" accessibilityLabel={`${thisYear} reading goal`}>
+            <Stack.Toolbar.MenuAction icon="pencil" disabled={goalEditor.busy} onPress={goalEditor.edit}>
+              {goalEditor.goal ? `Edit ${thisYear} Goal…` : `Set ${thisYear} Goal…`}
+            </Stack.Toolbar.MenuAction>
+            {goalEditor.goal ? (
+              <Stack.Toolbar.MenuAction icon="trash" destructive disabled={goalEditor.busy} onPress={goalEditor.remove}>
+                Remove Goal
+              </Stack.Toolbar.MenuAction>
+            ) : null}
+          </Stack.Toolbar.Menu>
+        ) : null}
+        <Stack.Toolbar.Button icon="plus" accessibilityLabel="Start reading" onPress={() => router.push('/library/start-reading')} />
+      </Stack.Toolbar>
     <ScreenScrollView
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
@@ -111,6 +130,7 @@ export default function Metrics() {
         </>
       )}
     </ScreenScrollView>
+    </>
   );
 }
 

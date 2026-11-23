@@ -1,4 +1,4 @@
-import { Alert, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Alert, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Card } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -10,23 +10,16 @@ import { useDeleteGoal, useGoals, useSetGoal } from '@/lib/library/hooks';
 import { goalProgress } from '@/lib/library/utils/pace';
 
 /**
- * This year's reading goal: "18 of 25 books · 2 ahead of pace", or a prompt to set one.
- * Hidden while goals load, or if they can't be loaded. Mirrors the web Metrics goal card.
+ * Setting, editing and removing this year's goal (a number prompt), shared by the Metrics
+ * toolbar's goal menu and a tap on the goal card. `ready` is false while goals load or if they
+ * can't be loaded; then neither shows.
  */
-export function GoalCard({ year, done, stacked = false, style }: {
-  year: number;
-  done: number;
-  /** Beside Currently Reading (wide layouts): a short column instead of two rows. */
-  stacked?: boolean;
-  style?: StyleProp<ViewStyle>;
-}) {
+export function useGoalEditor(year: number) {
   const { data: goals, isSuccess } = useGoals();
   const setGoal = useSetGoal();
   const deleteGoal = useDeleteGoal();
   const addToast = useToast();
-  if (!isSuccess) return null;
-
-  const goal = goals.find((g) => g.year === year);
+  const goal = goals?.find((g) => g.year === year);
   const busy = setGoal.isPending || deleteGoal.isPending;
 
   const save = (text: string | undefined) => {
@@ -70,25 +63,29 @@ export function GoalCard({ year, done, stacked = false, style }: {
     );
   };
 
-  if (!goal) {
-    return (
-      <Card style={style}>
-        <View style={styles.row}>
-          <Text style={[type.subheadline, { color: colors.secondaryLabel, flex: 1 }]}>No {year} reading goal yet.</Text>
-          <Pressable onPress={edit} disabled={busy} accessibilityRole="button" hitSlop={8}>
-            <Text style={[type.subheadline, { color: accents.library, fontWeight: '600' }]}>Set Goal</Text>
-          </Pressable>
-        </View>
-      </Card>
-    );
-  }
+  return { ready: isSuccess, goal, busy, edit, remove };
+}
+
+/**
+ * This year's reading goal: "18 of 25 · 2 ahead of pace", or nothing until one is set (from the
+ * toolbar's goal menu). Tapping it edits the goal. The web shows its buttons in the card instead.
+ */
+export function GoalCard({ year, done, stacked = false, style }: {
+  year: number;
+  done: number;
+  /** Beside Currently Reading (wide layouts): a short column instead of two rows. */
+  stacked?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const { ready, goal, busy, edit } = useGoalEditor(year);
+  if (!ready || !goal) return null;
 
   const progress = goalProgress(done, goal.target, year);
   const good = progress.status === 'met' || progress.status === 'ahead' || progress.status === 'onPace';
   const statusColor = good ? colors.positive : colors.secondaryLabel;
-  const a11y = `${year} goal: ${done} of ${goal.target} books, ${progress.label}. Double-tap to edit.`;
+  const a11y = `${year} goal: ${done} of ${goal.target} books, ${progress.label}. Double-tap to edit it.`;
 
-  // Beside Currently Reading: "2026 Goal / Edit", then a ring with "18 / 25" inside and the status under it.
+  // Beside Currently Reading: "2026 Goal", then a ring with "18 / 25" inside and the status under it.
   if (stacked) {
     return (
       // The tappable wrapper takes the row slot (`style`); the surface fills it, so heights match.
@@ -97,10 +94,7 @@ export function GoalCard({ year, done, stacked = false, style }: {
         accessibilityLabel={a11y}
         containerStyle={style}
         style={styles.fill}>
-        <View style={styles.row}>
-          <Text style={[type.headline, { color: colors.label, flex: 1 }]}>{year} Goal</Text>
-          <Text style={[type.subheadline, { color: accents.library }]}>Edit</Text>
-        </View>
+        <Text style={[type.headline, { color: colors.label }]}>{year} Goal</Text>
         {/* A ring fills the space under the title whatever height Currently Reading gives the row. */}
         <View style={styles.ringArea}>
           <ProgressRing value={progress.pct / 100} tint={accentHex.library}>
@@ -115,7 +109,7 @@ export function GoalCard({ year, done, stacked = false, style }: {
     );
   }
 
-  // Stacked layouts: two rows, "2026 Goal  18 of 25 · 2 ahead of pace   Edit", then a thin bar.
+  // Stacked layouts: two rows, "2026 Goal  18 of 25 · 2 ahead of pace", then a thin bar.
   return (
     <Card onPress={busy ? undefined : edit} accessibilityLabel={a11y} style={style}>
       <View style={styles.row}>
@@ -123,7 +117,6 @@ export function GoalCard({ year, done, stacked = false, style }: {
         <Text style={[type.subheadline, tabularNums, styles.summary]} numberOfLines={1}>
           {done} of {goal.target} · <Text style={{ color: statusColor }}>{progress.label}</Text>
         </Text>
-        <Text style={[type.subheadline, { color: accents.library }]}>Edit</Text>
       </View>
       <ProgressBar value={progress.pct / 100} tint={accents.library} height={4} style={styles.bar} />
     </Card>

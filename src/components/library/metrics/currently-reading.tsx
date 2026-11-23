@@ -113,20 +113,14 @@ function ReadingRow({ book }: { book: Book }) {
   );
 }
 
-/** "Currently Reading" card (ported from the web Metrics page). */
+/** "Currently Reading" card (ported from the web Metrics page; Start Reading is in the toolbar here). */
 export function CurrentlyReadingCard({ books, style }: { books: Book[]; style?: StyleProp<ViewStyle> }) {
   const reading = books.filter((b) => b.status === 'IN_PROGRESS');
   return (
     <Card padded={false} style={style}>
       <View style={styles.header}>
+        {/* Start Reading is the toolbar's + on this screen. */}
         <Text style={[type.headline, { color: colors.label, flex: 1 }]}>Currently Reading</Text>
-        <Pressable
-          onPress={() => router.push('/library/start-reading')}
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.startButton, pressed && { opacity: 0.7 }]}>
-          <SymbolView name="plus" size={12} weight="bold" tintColor={colors.white} />
-          <Text style={[type.footnote, { color: colors.white, fontWeight: '600' }]}>Start Reading</Text>
-        </Pressable>
       </View>
       {reading.length > 0 ? (
         reading.map((book) => (
@@ -145,15 +139,6 @@ export function CurrentlyReadingCard({ books, style }: { books: Book[]; style?: 
 const styles = StyleSheet.create({
   flex: { flex: 1, width: undefined },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.lg },
-  startButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: accents.library,
-  },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginLeft: spacing.lg },
   row: { padding: spacing.lg, gap: spacing.md },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
