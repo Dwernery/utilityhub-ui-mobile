@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
@@ -48,6 +48,10 @@ export default function Dashboard() {
   const rows = useMemo(() => (year ? buildMonthlyRows(history, year) : []), [history, year]);
 
   return (
+    <>
+    <Stack.Toolbar placement="right">
+      <Stack.Toolbar.Button icon="building.columns" accessibilityLabel="Accounts" onPress={() => router.push('/finances/accounts')} />
+    </Stack.Toolbar>
     <ScreenScrollView
       key={layoutKey}
       contentContainerStyle={styles.content}
@@ -98,6 +102,7 @@ export default function Dashboard() {
         </>
       )}
     </ScreenScrollView>
+    </>
   );
 }
 

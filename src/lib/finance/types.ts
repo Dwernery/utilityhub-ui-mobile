@@ -9,6 +9,8 @@ export interface Account {
   accountName: string;
   accountType: string;
   category: AccountCategory;
+  /** Archived accounts keep their balances (history is unchanged) but aren't offered for new months. */
+  archived: boolean;
 }
 
 /** One account's balance inside a net-worth snapshot. */
@@ -55,4 +57,13 @@ export interface MonthChange {
   month: string;
   change: number;
   changePercent: number;
+}
+
+/** What `POST /balances/{date}/copy-previous-month` did. */
+export interface BalanceCopyResult {
+  /** `YYYY-MM-01`, the month copied from */
+  fromDate: string;
+  toDate: string;
+  /** Balances created; accounts already in `toDate` are skipped. */
+  copied: number;
 }

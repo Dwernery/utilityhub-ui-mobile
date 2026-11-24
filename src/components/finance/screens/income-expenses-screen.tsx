@@ -196,7 +196,7 @@ export default function IncomeExpenses() {
                     </View>
                     <View style={styles.group}>
                       {list.length === 0 ? (
-                        <Text style={[type.subheadline, styles.empty]}>None yet. Tap + to add one.</Text>
+                        <Text style={[type.subheadline, styles.empty]}>No {income ? 'income' : 'expenses'} yet. Tap + to add one.</Text>
                       ) : (
                         list.map((t, i) => (
                           <TransactionRow

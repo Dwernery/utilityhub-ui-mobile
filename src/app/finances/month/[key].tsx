@@ -5,20 +5,22 @@ import { ActionSheetIOS, Alert, Pressable, StyleSheet, Text, View } from 'react-
 
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { SheetCloseButton } from '@/components/ui/sheet-close-button';
-import { colors, radius, spacing, tabularNums, type } from '@/constants/theme';
+import { accents, colors, radius, spacing, tabularNums, type } from '@/constants/theme';
 import { useToast } from '@/context/toast';
 import { haptics } from '@/lib/haptics';
 import {
   useAccounts,
+  useCopyPreviousMonthBalances,
   useCreateAccount,
   useNetWorthHistory,
   useRemoveAccountBalance,
   useSetAccountBalance,
 } from '@/lib/finance/hooks';
-import type { AccountCategory } from '@/lib/finance/types';
+import type { Account, AccountCategory } from '@/lib/finance/types';
 import { Currencyformatter, parseMoney } from '@/lib/finance/utils/currency';
 import { MONTH_LABELS } from '@/lib/finance/utils/metrics';
-import { ASSET_TYPES, monthAccounts } from '@/lib/finance/utils/monthly';
+import { addableAccounts } from '@/lib/finance/utils/accounts';
+import { ASSET_TYPES, copyResultMessage, monthAccounts, previousMonthToCopy } from '@/lib/finance/utils/monthly';
 import { parseMonthKey } from '@/lib/routeParams';
 
 const fmt = (n: number) => Currencyformatter.format(n);
@@ -61,10 +63,14 @@ function promptText(title: string, message: string | undefined, placeholder = ''
   });
 }
 
-function actionSheet(title: string, options: string[], destructiveIndex?: number): Promise<number | null> {
+function actionSheet(
+  title: string,
+  options: string[],
+  { destructiveIndex, message }: { destructiveIndex?: number; message?: string } = {},
+): Promise<number | null> {
   return new Promise((resolve) => {
     ActionSheetIOS.showActionSheetWithOptions(
-      { title, options: [...options, 'Cancel'], cancelButtonIndex: options.length, destructiveButtonIndex: destructiveIndex },
+      { title, message, options: [...options, 'Cancel'], cancelButtonIndex: options.length, destructiveButtonIndex: destructiveIndex },
       (i) => resolve(i === options.length ? null : i),
     );
   });
@@ -95,14 +101,29 @@ function MonthSheet({ year, month: monthNumber }: { year: number; month: number 
   const title = `${MONTH_LABELS[monthNumber - 1]} ${year}`;
 
   const { data: history } = useNetWorthHistory();
-  const { data: allAccounts = [] } = useAccounts();
+  const accounts = useAccounts();
   const setBalance = useSetAccountBalance();
   const removeBalance = useRemoveAccountBalance();
   const createAccount = useCreateAccount();
   const addToast = useToast();
-  const busy = setBalance.isPending || removeBalance.isPending || createAccount.isPending;
+  const copyPrevious = useCopyPreviousMonthBalances();
+  const busy = setBalance.isPending || removeBalance.isPending || createAccount.isPending || copyPrevious.isPending;
 
   const month = useMemo(() => monthAccounts(history, date), [history, date]);
+  const accountById = new Map((accounts.data ?? []).map((a) => [a.id, a]));
+
+  // Offered only on an empty month whose previous month has balances.
+  const copySource = month.hasData ? null : previousMonthToCopy(history, date);
+  const onCopyPrevious = () => {
+    haptics.tap();
+    copyPrevious.mutate(date, {
+      onSuccess: (result) => {
+        if (result.copied > 0) haptics.success();
+        addToast(copyResultMessage(result), result.copied === 0 ? 'info' : 'success');
+      },
+      onError: (e) => addToast(e.message || "Failed to copy last month's balances", 'error'),
+    });
+  };
 
   const saveBalance = (accountId: number, accountName: string, balance: number, verb: string) =>
     setBalance.mutate(
@@ -127,7 +148,7 @@ function MonthSheet({ year, month: monthNumber }: { year: number; month: number 
 
   const onRow = async (row: Row) => {
     haptics.selection();
-    const choice = await actionSheet(row.accountName, ['Edit Balance', 'Remove from Month'], 1);
+    const choice = await actionSheet(row.accountName, ['Edit Balance', 'Remove from Month'], { destructiveIndex: 1 });
     if (choice === 0) {
       const v = await askBalance(row.accountName, String(row.balance));
       if (v !== null) saveBalance(row.accountId, row.accountName, v, 'balance updated');
@@ -150,18 +171,43 @@ function MonthSheet({ year, month: monthNumber }: { year: number; month: number 
     }
   };
 
-  const onAdd = async (category: AccountCategory) => {
-    haptics.selection();
+  /**
+   * `+` on a section: pick an existing account or create one. Like the web's add form, the list
+   * says when accounts are still loading, failed to load (with Retry), or are all in this month
+   * already, and New Account… stays available in every case.
+   * `loaded` is the freshly fetched list after a Retry (the hook's value is from the last render).
+   */
+  const onAdd = async (category: AccountCategory, loaded?: Account[]) => {
+    if (!loaded) haptics.selection();
+    const list = loaded ?? accounts.data;
+    const failed = !list && accounts.isError;
     const present = new Set([...month.assets, ...month.liabilities].map((row) => row.accountId));
-    const available = allAccounts.filter((a) => a.category === category && !present.has(a.id));
-    const choice = await actionSheet(
-      `Add ${SECTION[category].title.slice(0, -1).toLowerCase()} for ${title}`,
-      [...available.map((a) => `${a.accountName} (${a.accountType})`), 'New Account…'],
-    );
+    // Archived accounts aren't offered for new months.
+    const available = addableAccounts(list ?? [], category, present);
+    const message = !list
+      ? failed
+        ? `Couldn’t load accounts${accounts.error?.message ? `: ${accounts.error.message}` : ''}`
+        : 'Loading accounts…'
+      : available.length === 0
+        ? 'All accounts are already in this month'
+        : undefined;
+    const options = [
+      ...(failed ? ['Retry'] : []),
+      ...available.map((a) => `${a.accountName} (${a.accountType})`),
+      'New Account…',
+    ];
+    const choice = await actionSheet(`Add ${SECTION[category].title.slice(0, -1).toLowerCase()} for ${title}`, options, { message });
     if (choice === null) return;
 
-    if (choice < available.length) {
-      const account = available[choice];
+    if (failed && choice === 0) {
+      const result = await accounts.refetch();
+      if (result.data) return onAdd(category, result.data);
+      return addToast(result.error?.message || 'Couldn’t load accounts', 'error');
+    }
+
+    const index = failed ? choice - 1 : choice;
+    if (index < available.length) {
+      const account = available[index];
       const v = await askBalance(account.accountName);
       if (v !== null) saveBalance(account.id, account.accountName, v, 'added for this month');
       return;
@@ -179,7 +225,8 @@ function MonthSheet({ year, month: monthNumber }: { year: number; month: number 
     } else {
       accountType = await promptText('Account Type', 'e.g. Credit Card, Mortgage');
     }
-    if (!accountType) return;
+    if (accountType === null) return; // cancelled
+    if (!accountType) return addToast('Please enter an account type', 'error');
 
     const balance = await askBalance(name);
     if (balance === null) return;
@@ -215,8 +262,23 @@ function MonthSheet({ year, month: monthNumber }: { year: number; month: number 
             <View style={{ flex: 1 }}>
               <Text style={[type.subheadline, { color: colors.label, fontWeight: '600' }]}>No data for this month yet</Text>
               <Text style={[type.footnote, { color: colors.secondaryLabel }]}>
-                Use + on Assets or Liabilities to add balances for {title}.
+                {copySource
+                  ? `Start from ${copySource.label}’s balances and update what changed, or tap + on Assets or Liabilities.`
+                  : `Tap + on Assets or Liabilities to add balances for ${title}.`}
               </Text>
+              {copySource && (
+                <Pressable
+                  onPress={onCopyPrevious}
+                  disabled={busy}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: busy, busy: copyPrevious.isPending }}
+                  style={({ pressed }) => [styles.copyButton, (pressed || busy) && { opacity: 0.6 }]}>
+                  <SymbolView name="doc.on.doc" size={13} weight="semibold" tintColor={colors.white} />
+                  <Text style={[type.footnote, { color: colors.white, fontWeight: '600' }]}>
+                    {copyPrevious.isPending ? 'Copying…' : `Copy from ${copySource.label}`}
+                  </Text>
+                </Pressable>
+              )}
             </View>
           </View>
         )}
@@ -233,7 +295,7 @@ function MonthSheet({ year, month: monthNumber }: { year: number; month: number 
                   onPress={() => onAdd(category)}
                   disabled={busy}
                   accessibilityRole="button"
-                  accessibilityLabel={`Add ${cfg.title.toLowerCase()}`}
+                  accessibilityLabel={`Add to ${cfg.title.toLowerCase()}`}
                   hitSlop={8}
                   style={({ pressed }) => [styles.addButton, { backgroundColor: cfg.tint }, (pressed || busy) && { opacity: 0.6 }]}>
                   <SymbolView name="plus" size={13} weight="bold" tintColor={colors.white} />
@@ -254,7 +316,7 @@ function MonthSheet({ year, month: monthNumber }: { year: number; month: number 
                         disabled={busy}
                         accessibilityRole="button"
                         accessibilityLabel={`${row.accountName}, ${row.accountType}, ${fmt(row.balance)}`}
-                        accessibilityHint="Edit or remove"
+                        accessibilityHint="Edit balance or remove"
                         style={({ pressed }) => [styles.row, i > 0 && styles.rowBorder, pressed && { backgroundColor: colors.fill }]}>
                         <SymbolView name={cfg.glyph} size={18} tintColor={cfg.tint} />
                         <View style={{ flex: 1, minWidth: 0 }}>
@@ -263,6 +325,7 @@ function MonthSheet({ year, month: monthNumber }: { year: number; month: number 
                           </Text>
                           <Text style={[type.caption1, { color: colors.secondaryLabel }]} numberOfLines={1}>
                             {row.accountType}
+                            {accountById.get(row.accountId)?.archived ? ' · Archived' : ''}
                           </Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
@@ -298,6 +361,17 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderCurve: 'continuous',
     backgroundColor: colors.noticeBackground,
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    minHeight: 32,
+    borderRadius: 999,
+    backgroundColor: accents.finances,
   },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.xs },
   sectionTitle: { flex: 1, fontSize: 13, fontWeight: '700', letterSpacing: 0.8 },

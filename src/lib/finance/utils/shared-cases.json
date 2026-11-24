@@ -1,0 +1,1649 @@
+{
+  "about": "Shared finance test cases. An identical copy lives in utility-hub-ui (src/domains/finance/utils/shared-cases.json) and utility-hub-mobile (src/lib/finance/utils/shared-cases.json); each app's shared-cases test runs every case against its own code, and fails if the two copies differ. Change both copies together. In args, {\"$fixture\": \"history\"} is that fixture below and {\"$set\": [...]} is a Set. Every case runs with the clock at `now` (local time).",
+  "now": "2026-11-15T12:00:00",
+  "fixtures": {
+    "accounts": [
+      {
+        "id": 1,
+        "accountName": "Checking",
+        "accountType": "Cash & Savings",
+        "category": "ASSET",
+        "archived": false
+      },
+      {
+        "id": 2,
+        "accountName": "Brokerage",
+        "accountType": "Investments",
+        "category": "ASSET",
+        "archived": false
+      },
+      {
+        "id": 3,
+        "accountName": "Old Savings",
+        "accountType": "Cash & Savings",
+        "category": "ASSET",
+        "archived": true
+      },
+      {
+        "id": 4,
+        "accountName": "Visa",
+        "accountType": "Credit Card",
+        "category": "LIABILITY",
+        "archived": false
+      },
+      {
+        "id": 5,
+        "accountName": "Crypto",
+        "accountType": "Crypto",
+        "category": "ASSET",
+        "archived": false
+      },
+      {
+        "id": 6,
+        "accountName": "Car Loan",
+        "accountType": "Auto Loan",
+        "category": "LIABILITY",
+        "archived": true
+      },
+      {
+        "id": 7,
+        "accountName": "Ally",
+        "accountType": "Cash & Savings",
+        "category": "ASSET",
+        "archived": false
+      }
+    ],
+    "history": [
+      {
+        "date": "2026-02-01",
+        "netWorth": 27000,
+        "source": "account-based",
+        "accounts": [
+          {
+            "accountId": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 5300
+          },
+          {
+            "accountId": 2,
+            "accountName": "Brokerage",
+            "accountType": "Investments",
+            "category": "ASSET",
+            "balance": 22500
+          },
+          {
+            "accountId": 4,
+            "accountName": "Visa",
+            "accountType": "Credit Card",
+            "category": "LIABILITY",
+            "balance": 800
+          }
+        ]
+      },
+      {
+        "date": "2022-01-01",
+        "netWorth": 50000,
+        "source": "historical",
+        "accounts": null
+      },
+      {
+        "date": "2022-02-01",
+        "netWorth": 51000,
+        "source": "historical",
+        "accounts": null
+      },
+      {
+        "date": "2025-11-01",
+        "netWorth": 24500,
+        "source": "account-based",
+        "accounts": [
+          {
+            "accountId": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 5000
+          },
+          {
+            "accountId": 2,
+            "accountName": "Brokerage",
+            "accountType": "Investments",
+            "category": "ASSET",
+            "balance": 20000
+          },
+          {
+            "accountId": 3,
+            "accountName": "Old Savings",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 1000
+          },
+          {
+            "accountId": 4,
+            "accountName": "Visa",
+            "accountType": "Credit Card",
+            "category": "LIABILITY",
+            "balance": 1500
+          }
+        ]
+      },
+      {
+        "date": "2025-12-01",
+        "netWorth": 26000,
+        "source": "account-based",
+        "accounts": [
+          {
+            "accountId": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 5200
+          },
+          {
+            "accountId": 2,
+            "accountName": "Brokerage",
+            "accountType": "Investments",
+            "category": "ASSET",
+            "balance": 21000
+          },
+          {
+            "accountId": 3,
+            "accountName": "Old Savings",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 1000
+          },
+          {
+            "accountId": 4,
+            "accountName": "Visa",
+            "accountType": "Credit Card",
+            "category": "LIABILITY",
+            "balance": 1200
+          }
+        ]
+      },
+      {
+        "date": "2026-01-01",
+        "netWorth": 25300,
+        "source": "account-based",
+        "accounts": [
+          {
+            "accountId": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 5100
+          },
+          {
+            "accountId": 2,
+            "accountName": "Brokerage",
+            "accountType": "Investments",
+            "category": "ASSET",
+            "balance": 21500
+          },
+          {
+            "accountId": 4,
+            "accountName": "Visa",
+            "accountType": "Credit Card",
+            "category": "LIABILITY",
+            "balance": 1300
+          }
+        ]
+      },
+      {
+        "date": "2026-04-01",
+        "netWorth": 27600,
+        "source": "account-based",
+        "accounts": [
+          {
+            "accountId": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 5000
+          },
+          {
+            "accountId": 2,
+            "accountName": "Brokerage",
+            "accountType": "Investments",
+            "category": "ASSET",
+            "balance": 23000
+          },
+          {
+            "accountId": 5,
+            "accountName": "Crypto",
+            "accountType": "Crypto",
+            "category": "ASSET",
+            "balance": 500
+          },
+          {
+            "accountId": 4,
+            "accountName": "Visa",
+            "accountType": "Credit Card",
+            "category": "LIABILITY",
+            "balance": 900
+          }
+        ]
+      },
+      {
+        "date": "2026-10-01",
+        "netWorth": 30000,
+        "source": "account-based",
+        "accounts": [
+          {
+            "accountId": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 6000
+          },
+          {
+            "accountId": 2,
+            "accountName": "Brokerage",
+            "accountType": "Investments",
+            "category": "ASSET",
+            "balance": 25000
+          },
+          {
+            "accountId": 5,
+            "accountName": "Crypto",
+            "accountType": "Crypto",
+            "category": "ASSET",
+            "balance": 0
+          },
+          {
+            "accountId": 4,
+            "accountName": "Visa",
+            "accountType": "Credit Card",
+            "category": "LIABILITY",
+            "balance": 1000
+          }
+        ]
+      },
+      {
+        "date": "2026-11-01",
+        "netWorth": 5000,
+        "source": "account-based",
+        "accounts": [
+          {
+            "accountId": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 6100
+          },
+          {
+            "accountId": 4,
+            "accountName": "Visa",
+            "accountType": "Credit Card",
+            "category": "LIABILITY",
+            "balance": 1100
+          }
+        ]
+      }
+    ],
+    "transactions": [
+      {
+        "id": 1,
+        "name": "Salary",
+        "transactionType": "INCOME",
+        "amount": 4000,
+        "paid": true,
+        "cash": true
+      },
+      {
+        "id": 2,
+        "name": "Bonus",
+        "transactionType": "INCOME",
+        "amount": 1000,
+        "paid": false,
+        "cash": false
+      },
+      {
+        "id": 3,
+        "name": "Rent",
+        "transactionType": "EXPENSE",
+        "amount": 1500,
+        "paid": true,
+        "cash": true
+      },
+      {
+        "id": 4,
+        "name": "Gym",
+        "transactionType": "EXPENSE",
+        "amount": 45,
+        "paid": false,
+        "cash": true
+      },
+      {
+        "id": 5,
+        "name": "Streaming",
+        "transactionType": "EXPENSE",
+        "amount": 15.99,
+        "paid": false,
+        "cash": false
+      }
+    ],
+    "incomeSources": [
+      {
+        "id": 1,
+        "year": 2024,
+        "name": "Salary",
+        "amount": 80000
+      },
+      {
+        "id": 2,
+        "year": 2025,
+        "name": "Bonus",
+        "amount": 5000
+      },
+      {
+        "id": 3,
+        "year": 2025,
+        "name": "Salary",
+        "amount": 85000
+      },
+      {
+        "id": 4,
+        "year": 2026,
+        "name": "Side Work",
+        "amount": 2500
+      },
+      {
+        "id": 5,
+        "year": 2026,
+        "name": "Salary",
+        "amount": 90000
+      }
+    ]
+  },
+  "cases": [
+    {
+      "fn": "parseMoney",
+      "note": "plain",
+      "args": ["12.5"],
+      "expected": {
+        "ok": true,
+        "value": 12.5
+      }
+    },
+    {
+      "fn": "parseMoney",
+      "note": "thousands and dollar sign",
+      "args": ["$1,234.56"],
+      "expected": {
+        "ok": true,
+        "value": 1234.56
+      }
+    },
+    {
+      "fn": "parseMoney",
+      "note": "dollar sign after minus",
+      "args": [
+        "$-5",
+        {
+          "allowNegative": true
+        }
+      ],
+      "expected": {
+        "ok": true,
+        "value": -5
+      }
+    },
+    {
+      "fn": "parseMoney",
+      "note": "decimal comma",
+      "args": ["12,50"],
+      "expected": {
+        "ok": true,
+        "value": 12.5
+      }
+    },
+    {
+      "fn": "parseMoney",
+      "note": "empty",
+      "args": ["  "],
+      "expected": {
+        "ok": false,
+        "error": "Enter an amount"
+      }
+    },
+    {
+      "fn": "parseMoney",
+      "note": "not a number",
+      "args": ["45O0"],
+      "expected": {
+        "ok": false,
+        "error": "Enter an amount like 1,234.56"
+      }
+    },
+    {
+      "fn": "parseMoney",
+      "note": "too many decimals",
+      "args": ["10.999"],
+      "expected": {
+        "ok": false,
+        "error": "Use at most 2 decimal places"
+      }
+    },
+    {
+      "fn": "parseMoney",
+      "note": "negative not allowed",
+      "args": ["-5"],
+      "expected": {
+        "ok": false,
+        "error": "Amount can't be negative"
+      }
+    },
+    {
+      "fn": "parseMoney",
+      "note": "negative allowed",
+      "args": [
+        "-$5.25",
+        {
+          "allowNegative": true
+        }
+      ],
+      "expected": {
+        "ok": true,
+        "value": -5.25
+      }
+    },
+    {
+      "fn": "parseMoney",
+      "note": "misplaced comma",
+      "args": ["1,23,4"],
+      "expected": {
+        "ok": false,
+        "error": "Enter an amount like 1,234.56"
+      }
+    },
+    {
+      "fn": "groupAccounts",
+      "note": "active by category, archived together",
+      "args": [
+        {
+          "$fixture": "accounts"
+        }
+      ],
+      "expected": {
+        "assets": [
+          {
+            "id": 7,
+            "accountName": "Ally",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "archived": false
+          },
+          {
+            "id": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "archived": false
+          },
+          {
+            "id": 5,
+            "accountName": "Crypto",
+            "accountType": "Crypto",
+            "category": "ASSET",
+            "archived": false
+          },
+          {
+            "id": 2,
+            "accountName": "Brokerage",
+            "accountType": "Investments",
+            "category": "ASSET",
+            "archived": false
+          }
+        ],
+        "liabilities": [
+          {
+            "id": 4,
+            "accountName": "Visa",
+            "accountType": "Credit Card",
+            "category": "LIABILITY",
+            "archived": false
+          }
+        ],
+        "archived": [
+          {
+            "id": 6,
+            "accountName": "Car Loan",
+            "accountType": "Auto Loan",
+            "category": "LIABILITY",
+            "archived": true
+          },
+          {
+            "id": 3,
+            "accountName": "Old Savings",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "archived": true
+          }
+        ]
+      }
+    },
+    {
+      "fn": "groupAccounts",
+      "note": "no accounts",
+      "args": [[]],
+      "expected": {
+        "assets": [],
+        "liabilities": [],
+        "archived": []
+      }
+    },
+    {
+      "fn": "addableAccounts",
+      "note": "skips archived and present",
+      "args": [
+        {
+          "$fixture": "accounts"
+        },
+        "ASSET",
+        {
+          "$set": [1]
+        }
+      ],
+      "expected": [
+        {
+          "id": 2,
+          "accountName": "Brokerage",
+          "accountType": "Investments",
+          "category": "ASSET",
+          "archived": false
+        },
+        {
+          "id": 5,
+          "accountName": "Crypto",
+          "accountType": "Crypto",
+          "category": "ASSET",
+          "archived": false
+        },
+        {
+          "id": 7,
+          "accountName": "Ally",
+          "accountType": "Cash & Savings",
+          "category": "ASSET",
+          "archived": false
+        }
+      ]
+    },
+    {
+      "fn": "addableAccounts",
+      "note": "liabilities",
+      "args": [
+        {
+          "$fixture": "accounts"
+        },
+        "LIABILITY",
+        {
+          "$set": []
+        }
+      ],
+      "expected": [
+        {
+          "id": 4,
+          "accountName": "Visa",
+          "accountType": "Credit Card",
+          "category": "LIABILITY",
+          "archived": false
+        }
+      ]
+    },
+    {
+      "fn": "assetTypeOptions",
+      "note": "custom type kept",
+      "args": ["Crypto"],
+      "expected": [
+        "Cash & Savings",
+        "Investments",
+        "Retirement",
+        "Property",
+        "Crypto"
+      ]
+    },
+    {
+      "fn": "assetTypeOptions",
+      "note": "standard type",
+      "args": ["Investments"],
+      "expected": ["Cash & Savings", "Investments", "Retirement", "Property"]
+    },
+    {
+      "fn": "assetTypeOptions",
+      "note": "no type",
+      "args": [],
+      "expected": ["Cash & Savings", "Investments", "Retirement", "Property"]
+    },
+    {
+      "fn": "getIncomeYears",
+      "note": "sorted, unique",
+      "args": [
+        {
+          "$fixture": "incomeSources"
+        }
+      ],
+      "expected": [2024, 2025, 2026]
+    },
+    {
+      "fn": "getIncomeYears",
+      "note": "none",
+      "args": [[]],
+      "expected": []
+    },
+    {
+      "fn": "getSourcesForYear",
+      "note": "largest first",
+      "args": [
+        {
+          "$fixture": "incomeSources"
+        },
+        2025
+      ],
+      "expected": [
+        {
+          "id": 3,
+          "year": 2025,
+          "name": "Salary",
+          "amount": 85000
+        },
+        {
+          "id": 2,
+          "year": 2025,
+          "name": "Bonus",
+          "amount": 5000
+        }
+      ]
+    },
+    {
+      "fn": "getYearTotal",
+      "note": "2026",
+      "args": [
+        {
+          "$fixture": "incomeSources"
+        },
+        2026
+      ],
+      "expected": 92500
+    },
+    {
+      "fn": "getIncomeYoY",
+      "note": "vs previous year",
+      "args": [
+        {
+          "$fixture": "incomeSources"
+        },
+        2026
+      ],
+      "expected": {
+        "currentTotal": 92500,
+        "prevTotal": 90000,
+        "change": 2500,
+        "changePercent": 2.777778
+      }
+    },
+    {
+      "fn": "getIncomeYoY",
+      "note": "no previous year",
+      "args": [
+        {
+          "$fixture": "incomeSources"
+        },
+        2024
+      ],
+      "expected": {
+        "currentTotal": 80000,
+        "prevTotal": 0,
+        "change": 80000,
+        "changePercent": 0
+      }
+    },
+    {
+      "fn": "getYears",
+      "note": "every year with data",
+      "args": [
+        {
+          "$fixture": "history"
+        }
+      ],
+      "expected": [2022, 2025, 2026]
+    },
+    {
+      "fn": "getMonthlyChartData",
+      "note": "current month left out",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        2026
+      ],
+      "expected": [
+        {
+          "month": "January",
+          "netWorth": 25300
+        },
+        {
+          "month": "February",
+          "netWorth": 27000
+        },
+        {
+          "month": "April",
+          "netWorth": 27600
+        },
+        {
+          "month": "October",
+          "netWorth": 30000
+        }
+      ]
+    },
+    {
+      "fn": "getYearMetrics",
+      "note": "vs last year's December",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        2026
+      ],
+      "expected": {
+        "currentNetWorth": 30000,
+        "prevYearNetWorth": 26000,
+        "yoyChange": 4000,
+        "yoyPercentage": 15.384615
+      }
+    },
+    {
+      "fn": "getYearMetrics",
+      "note": "2022 uses the hard-coded prior balance",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        2022
+      ],
+      "expected": {
+        "currentNetWorth": 51000,
+        "prevYearNetWorth": 48173.05,
+        "yoyChange": 2826.95,
+        "yoyPercentage": 5.868323
+      }
+    },
+    {
+      "fn": "getYearMetrics",
+      "note": "no year",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        null
+      ],
+      "expected": {
+        "currentNetWorth": 0,
+        "prevYearNetWorth": 0,
+        "yoyChange": 0,
+        "yoyPercentage": 0
+      }
+    },
+    {
+      "fn": "getYearStats",
+      "note": "in-progress year with a gap",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        2026
+      ],
+      "expected": {
+        "bestMonth": {
+          "month": "October",
+          "change": 2400,
+          "changePercent": 8.695652
+        },
+        "worstMonth": {
+          "month": "January",
+          "change": -700,
+          "changePercent": -2.692308
+        },
+        "avgChange": 1000,
+        "avgChangePercent": 3.736234,
+        "highest": 30000,
+        "lowest": 25300
+      }
+    },
+    {
+      "fn": "getYearStats",
+      "note": "partial past year",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        2025
+      ],
+      "expected": {
+        "bestMonth": {
+          "month": "November",
+          "change": 24500,
+          "changePercent": 0
+        },
+        "worstMonth": {
+          "month": "December",
+          "change": 1500,
+          "changePercent": 6.122449
+        },
+        "avgChange": 13000,
+        "avgChangePercent": 3.061224,
+        "highest": 26000,
+        "lowest": 24500
+      }
+    },
+    {
+      "fn": "getYearStats",
+      "note": "2022 uses the hard-coded prior balance",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        2022
+      ],
+      "expected": {
+        "bestMonth": {
+          "month": "January",
+          "change": 1826.95,
+          "changePercent": 3.792473
+        },
+        "worstMonth": {
+          "month": "February",
+          "change": 1000,
+          "changePercent": 2
+        },
+        "avgChange": 1413.475,
+        "avgChangePercent": 2.896237,
+        "highest": 51000,
+        "lowest": 50000
+      }
+    },
+    {
+      "fn": "getYearStats",
+      "note": "year without data",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        2023
+      ],
+      "expected": {
+        "bestMonth": null,
+        "worstMonth": null,
+        "avgChange": 0,
+        "avgChangePercent": 0,
+        "highest": 0,
+        "lowest": 0
+      }
+    },
+    {
+      "fn": "buildMonthlyRows",
+      "note": "current year",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        2026
+      ],
+      "expected": [
+        {
+          "key": "2026-01",
+          "date": "2026-01-01",
+          "month": "January",
+          "assets": 26600,
+          "liabilities": 1300,
+          "netWorth": 25300,
+          "change": -700,
+          "changePercent": -2.692308,
+          "hasData": true,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2026-02",
+          "date": "2026-02-01",
+          "month": "February",
+          "assets": 27800,
+          "liabilities": 800,
+          "netWorth": 27000,
+          "change": 1700,
+          "changePercent": 6.719368,
+          "hasData": true,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2026-03",
+          "date": null,
+          "month": "March",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2026-04",
+          "date": "2026-04-01",
+          "month": "April",
+          "assets": 28500,
+          "liabilities": 900,
+          "netWorth": 27600,
+          "change": 600,
+          "changePercent": 2.222222,
+          "hasData": true,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2026-05",
+          "date": null,
+          "month": "May",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2026-06",
+          "date": null,
+          "month": "June",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2026-07",
+          "date": null,
+          "month": "July",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2026-08",
+          "date": null,
+          "month": "August",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2026-09",
+          "date": null,
+          "month": "September",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2026-10",
+          "date": "2026-10-01",
+          "month": "October",
+          "assets": 31000,
+          "liabilities": 1000,
+          "netWorth": 30000,
+          "change": 2400,
+          "changePercent": 8.695652,
+          "hasData": true,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2026-11",
+          "date": "2026-11-01",
+          "month": "November",
+          "assets": 6100,
+          "liabilities": 1100,
+          "netWorth": 5000,
+          "change": -25000,
+          "changePercent": -83.333333,
+          "hasData": true,
+          "isCurrentMonth": true
+        },
+        {
+          "key": "2026-12",
+          "date": null,
+          "month": "December",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        }
+      ]
+    },
+    {
+      "fn": "buildMonthlyRows",
+      "note": "past year",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        2025
+      ],
+      "expected": [
+        {
+          "key": "2025-01",
+          "date": null,
+          "month": "January",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-02",
+          "date": null,
+          "month": "February",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-03",
+          "date": null,
+          "month": "March",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-04",
+          "date": null,
+          "month": "April",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-05",
+          "date": null,
+          "month": "May",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-06",
+          "date": null,
+          "month": "June",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-07",
+          "date": null,
+          "month": "July",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-08",
+          "date": null,
+          "month": "August",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-09",
+          "date": null,
+          "month": "September",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-10",
+          "date": null,
+          "month": "October",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-11",
+          "date": "2025-11-01",
+          "month": "November",
+          "assets": 26000,
+          "liabilities": 1500,
+          "netWorth": 24500,
+          "change": 0,
+          "changePercent": 0,
+          "hasData": true,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2025-12",
+          "date": "2025-12-01",
+          "month": "December",
+          "assets": 27200,
+          "liabilities": 1200,
+          "netWorth": 26000,
+          "change": 1500,
+          "changePercent": 6.122449,
+          "hasData": true,
+          "isCurrentMonth": false
+        }
+      ]
+    },
+    {
+      "fn": "buildMonthlyRows",
+      "note": "historical totals",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        2022
+      ],
+      "expected": [
+        {
+          "key": "2022-01",
+          "date": "2022-01-01",
+          "month": "January",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": 50000,
+          "change": 1826.95,
+          "changePercent": 3.792473,
+          "hasData": true,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-02",
+          "date": "2022-02-01",
+          "month": "February",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": 51000,
+          "change": 1000,
+          "changePercent": 2,
+          "hasData": true,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-03",
+          "date": null,
+          "month": "March",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-04",
+          "date": null,
+          "month": "April",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-05",
+          "date": null,
+          "month": "May",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-06",
+          "date": null,
+          "month": "June",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-07",
+          "date": null,
+          "month": "July",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-08",
+          "date": null,
+          "month": "August",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-09",
+          "date": null,
+          "month": "September",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-10",
+          "date": null,
+          "month": "October",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-11",
+          "date": null,
+          "month": "November",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        },
+        {
+          "key": "2022-12",
+          "date": null,
+          "month": "December",
+          "assets": 0,
+          "liabilities": 0,
+          "netWorth": null,
+          "change": null,
+          "changePercent": null,
+          "hasData": false,
+          "isCurrentMonth": false
+        }
+      ]
+    },
+    {
+      "fn": "monthAccounts",
+      "note": "with changes",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        "2026-02-01"
+      ],
+      "expected": {
+        "hasData": true,
+        "assets": [
+          {
+            "accountId": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 5300,
+            "change": 200,
+            "changePercent": 3.921569
+          },
+          {
+            "accountId": 2,
+            "accountName": "Brokerage",
+            "accountType": "Investments",
+            "category": "ASSET",
+            "balance": 22500,
+            "change": 1000,
+            "changePercent": 4.651163
+          }
+        ],
+        "liabilities": [
+          {
+            "accountId": 4,
+            "accountName": "Visa",
+            "accountType": "Credit Card",
+            "category": "LIABILITY",
+            "balance": 800,
+            "change": -500,
+            "changePercent": -38.461538
+          }
+        ],
+        "netWorth": 27000
+      }
+    },
+    {
+      "fn": "monthAccounts",
+      "note": "previous month missing",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        "2026-04-01"
+      ],
+      "expected": {
+        "hasData": true,
+        "assets": [
+          {
+            "accountId": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 5000,
+            "change": null,
+            "changePercent": null
+          },
+          {
+            "accountId": 5,
+            "accountName": "Crypto",
+            "accountType": "Crypto",
+            "category": "ASSET",
+            "balance": 500,
+            "change": null,
+            "changePercent": null
+          },
+          {
+            "accountId": 2,
+            "accountName": "Brokerage",
+            "accountType": "Investments",
+            "category": "ASSET",
+            "balance": 23000,
+            "change": null,
+            "changePercent": null
+          }
+        ],
+        "liabilities": [
+          {
+            "accountId": 4,
+            "accountName": "Visa",
+            "accountType": "Credit Card",
+            "category": "LIABILITY",
+            "balance": 900,
+            "change": null,
+            "changePercent": null
+          }
+        ],
+        "netWorth": 27600
+      }
+    },
+    {
+      "fn": "monthAccounts",
+      "note": "empty month",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        "2026-03-01"
+      ],
+      "expected": {
+        "hasData": false,
+        "assets": [],
+        "liabilities": [],
+        "netWorth": 0
+      }
+    },
+    {
+      "fn": "previousMonthToCopy",
+      "note": "previous month has balances",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        "2026-11-01"
+      ],
+      "expected": {
+        "fromDate": "2026-10-01",
+        "label": "October 2026"
+      }
+    },
+    {
+      "fn": "previousMonthToCopy",
+      "note": "previous month empty",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        "2026-04-01"
+      ],
+      "expected": null
+    },
+    {
+      "fn": "previousMonthToCopy",
+      "note": "across a year",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        "2026-01-01"
+      ],
+      "expected": {
+        "fromDate": "2025-12-01",
+        "label": "December 2025"
+      }
+    },
+    {
+      "fn": "copyResultMessage",
+      "note": "one",
+      "args": [
+        {
+          "fromDate": "2026-10-01",
+          "copied": 1
+        }
+      ],
+      "expected": "Copied 1 balance from October 2026"
+    },
+    {
+      "fn": "copyResultMessage",
+      "note": "several",
+      "args": [
+        {
+          "fromDate": "2025-12-01",
+          "copied": 3
+        }
+      ],
+      "expected": "Copied 3 balances from December 2025"
+    },
+    {
+      "fn": "copyResultMessage",
+      "note": "none",
+      "args": [
+        {
+          "fromDate": "2026-10-01",
+          "copied": 0
+        }
+      ],
+      "expected": "Every account already has a balance this month"
+    },
+    {
+      "fn": "transactionTotals",
+      "note": "cash-only net cash flow",
+      "args": [
+        {
+          "$fixture": "transactions"
+        }
+      ],
+      "expected": {
+        "income": 5000,
+        "expenses": 1560.99,
+        "netCashFlow": 2455,
+        "netIncome": 3439.01
+      }
+    },
+    {
+      "fn": "transactionTotals",
+      "note": "none",
+      "args": [[]],
+      "expected": {
+        "income": 0,
+        "expenses": 0,
+        "netCashFlow": 0,
+        "netIncome": 0
+      }
+    },
+    {
+      "fn": "financeHomeSummary",
+      "note": "latest complete month and projection",
+      "args": [
+        {
+          "$fixture": "history"
+        },
+        {
+          "$fixture": "transactions"
+        }
+      ],
+      "expected": {
+        "netWorth": 30000,
+        "dollarChange": 4000,
+        "percentChange": 15.384615,
+        "projectedNetWorth": 5939.01,
+        "projectedPercentChange": -80.2033,
+        "accountChanges": [
+          {
+            "accountId": 1,
+            "accountName": "Checking",
+            "accountType": "Cash & Savings",
+            "category": "ASSET",
+            "balance": 6100,
+            "change": 100,
+            "percentChange": 1.666667
+          }
+        ]
+      }
+    },
+    {
+      "fn": "financeHomeSummary",
+      "note": "no history",
+      "args": [
+        [],
+        {
+          "$fixture": "transactions"
+        }
+      ],
+      "expected": {
+        "netWorth": 0,
+        "dollarChange": 0,
+        "percentChange": 0,
+        "projectedNetWorth": 0,
+        "projectedPercentChange": 0,
+        "accountChanges": []
+      }
+    },
+    {
+      "fn": "ASSET_TYPES",
+      "note": "constant",
+      "args": null,
+      "expected": ["Cash & Savings", "Investments", "Retirement", "Property"]
+    },
+    {
+      "fn": "MONTH_LABELS",
+      "note": "constant",
+      "args": null,
+      "expected": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
+    },
+    {
+      "fn": "PRIOR_YEAR_ENDING_BALANCES",
+      "note": "constant",
+      "args": null,
+      "expected": {
+        "2022": 48173.05
+      }
+    }
+  ]
+}

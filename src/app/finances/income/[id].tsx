@@ -1,28 +1,51 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useKeyboardInset } from '@/hooks/use-keyboard-inset';
 
 import { FormSection, FormTextField } from '@/components/ui/form';
 import { FormSheetToolbar } from '@/components/ui/form-sheet-toolbar';
-import { accents, colors, spacing } from '@/constants/theme';
+import { SheetCloseButton } from '@/components/ui/sheet-close-button';
+import { accents, colors, spacing, type } from '@/constants/theme';
 import { useToast } from '@/context/toast';
 import { useDeleteIncomeSource, useIncomeSources, useSaveIncomeSource } from '@/lib/finance/hooks';
 import { parseMoney } from '@/lib/finance/utils/currency';
 import { parseIdParam } from '@/lib/routeParams';
 
+/** A 4-digit year from a route param, or undefined (same rule as the "Add Year" prompt). */
+const parseYearParam = (value: string | undefined) => (value && /^\d{4}$/.test(value) ? Number(value) : undefined);
+
 /** Add (`id = new`, with `year`) or edit/delete an income source (the web's Income History modal). */
 export default function IncomeSourceSheet() {
   const params = useLocalSearchParams<{ id: string; year?: string }>();
-  const id = parseIdParam(params.id); // undefined for "new"
-  const year = params.year;
   const { data: sources = [] } = useIncomeSources();
-  const existing = id === undefined ? undefined : sources.find((s) => s.id === id);
-  const yearNum = existing?.year ?? Number(year);
 
-  return <Form key={existing?.id ?? 'new'} id={existing?.id} year={yearNum} initialName={existing?.name ?? ''} initialAmount={existing ? String(existing.amount) : ''} />;
+  if (params.id === 'new') {
+    const year = parseYearParam(params.year);
+    if (year === undefined) return <Missing message="This year isn’t valid." />;
+    return <Form key="new" year={year} initialName="" initialAmount="" />;
+  }
+
+  // Anything else must name a source that exists. A deleted source or a bad link gets a
+  // message, not an "Add Income · NaN" form that would save a source with no year.
+  const id = parseIdParam(params.id);
+  const existing = sources.find((s) => s.id === id);
+  if (!existing) return <Missing message="This income source no longer exists." />;
+  return <Form key={existing.id} id={existing.id} year={existing.year} initialName={existing.name} initialAmount={String(existing.amount)} />;
+}
+
+function Missing({ message }: { message: string }) {
+  return (
+    <>
+      <Stack.Screen options={{ title: 'Income' }} />
+      <SheetCloseButton />
+      <View style={styles.missing}>
+        <Text style={[type.subheadline, { color: colors.secondaryLabel }]}>{message}</Text>
+      </View>
+    </>
+  );
 }
 
 function Form({ id, year, initialName, initialAmount }: { id?: number; year: number; initialName: string; initialAmount: string }) {
@@ -71,7 +94,7 @@ function Form({ id, year, initialName, initialAmount }: { id?: number; year: num
 
   return (
     <>
-      <Stack.Screen options={{ title: id ? 'Edit Income' : `Add Income · ${year}` }} />
+      <Stack.Screen options={{ title: id ? 'Edit Income Source' : `Add Income Source — ${year}` }} />
       <FormSheetToolbar
         dirty={dirty}
         busy={busy}
@@ -88,7 +111,7 @@ function Form({ id, year, initialName, initialAmount }: { id?: number; year: num
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingLeft: spacing.lg + insets.left, paddingRight: spacing.lg + insets.right }]}>
         <FormSection>
-          <FormTextField label="Source" value={name} onChangeText={setName} placeholder="e.g. Salary" editable={!busy} />
+          <FormTextField label="Source" value={name} onChangeText={setName} placeholder="e.g. Base Salary" editable={!busy} />
           <FormTextField label="Amount" value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" editable={!busy} />
         </FormSection>
       </ScrollView>
@@ -99,4 +122,5 @@ function Form({ id, year, initialName, initialAmount }: { id?: number; year: num
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.groupedBackground },
   content: { paddingTop: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.xl },
+  missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

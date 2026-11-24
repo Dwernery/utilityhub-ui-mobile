@@ -1,5 +1,13 @@
 import { requestJson, requestMaybeJson } from '../http';
-import type { Account, AccountCategory, IncomeSource, NetWorthEntry, Transaction, TransactionType } from './types';
+import type {
+  Account,
+  AccountCategory,
+  BalanceCopyResult,
+  IncomeSource,
+  NetWorthEntry,
+  Transaction,
+  TransactionType,
+} from './types';
 
 const BASE = '/api/finance';
 
@@ -26,8 +34,27 @@ export function deleteAccountBalance(accountId: number, balanceDate: string) {
   });
 }
 
+/** Fills a month (`YYYY-MM-01`) from the month before it; accounts already in the month are left alone. */
+export function copyPreviousMonthBalances(balanceDate: string) {
+  return requestJson<BalanceCopyResult>(`${BASE}/balances/${balanceDate}/copy-previous-month`, {
+    method: 'POST',
+    errorMessage: "Failed to copy last month's balances",
+    includeErrorDetail: true,
+  });
+}
+
 export function getAccounts() {
   return requestJson<Account[]>(`${BASE}/accounts`, { errorMessage: 'Failed to fetch accounts' });
+}
+
+/** Renames, retypes or (un)archives an account. The type must stay in the account's category (the API rejects it otherwise). */
+export function updateAccount(id: number, body: { accountName: string; accountType: string; archived: boolean }) {
+  return requestJson<Account>(`${BASE}/accounts/${id}`, {
+    method: 'PUT',
+    body,
+    errorMessage: 'Failed to update account',
+    includeErrorDetail: true,
+  });
 }
 
 export interface NewAccount {
@@ -77,10 +104,11 @@ export function deleteTransaction(id: number) {
   });
 }
 
-export function updateTransaction(id: number, name: string, amount: number, paid: boolean) {
+export function updateTransaction(id: number, name: string, amount: number, paid: boolean, cash?: boolean) {
   return requestMaybeJson(`${BASE}/transactions/${id}`, {
     method: 'PUT',
-    body: { name, amount, paid },
+    // Left out (undefined), cash keeps its current value on the server.
+    body: { name, amount, paid, cash },
     errorMessage: 'Failed to update transaction',
     includeErrorDetail: true,
   });

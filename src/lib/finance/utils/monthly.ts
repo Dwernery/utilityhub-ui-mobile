@@ -1,4 +1,4 @@
-import type { AccountBalance, NetWorthEntry, Transaction } from '../types';
+import type { AccountBalance, BalanceCopyResult, NetWorthEntry, Transaction } from '../types';
 import { getEntryAssets, getEntryLiabilities, MONTH_LABELS, PRIOR_YEAR_ENDING_BALANCES } from './metrics';
 import { byDate, isoMonth, isoYear, previousMonthIso } from '../../dates';
 
@@ -19,6 +19,8 @@ export interface MonthRow {
 }
 
 const pct = (change: number, prev: number) => (prev !== 0 ? (change / prev) * 100 : 0);
+
+const monthYear = (date: string) => `${MONTH_LABELS[isoMonth(date) - 1]} ${isoYear(date)}`;
 
 /** The 12 rows of the dashboard's monthly table (ported 1:1 from MonthlyTable's useMemo). */
 export function buildMonthlyRows(history: NetWorthEntry[] | undefined, selectedYear: number, now = new Date()): MonthRow[] {
@@ -148,6 +150,22 @@ export function monthAccounts(history: NetWorthEntry[] | undefined, date: string
     liabilities,
     netWorth: entry?.netWorth ?? totalAssets - totalLiabilities,
   };
+}
+
+/**
+ * The month a "copy last month" for `date` would copy from (label: "October 2026"), or null when
+ * that month has no account balances, so there's nothing to offer. Mirrors the web's helper.
+ */
+export function previousMonthToCopy(history: NetWorthEntry[] | undefined, date: string) {
+  const fromDate = previousMonthIso(date);
+  if (!monthAccounts(history, fromDate).hasData) return null;
+  return { fromDate, label: monthYear(fromDate) };
+}
+
+/** The toast after a copy. */
+export function copyResultMessage({ fromDate, copied }: Pick<BalanceCopyResult, 'fromDate' | 'copied'>) {
+  if (copied === 0) return 'Every account already has a balance this month';
+  return `Copied ${copied} balance${copied === 1 ? '' : 's'} from ${monthYear(fromDate)}`;
 }
 
 /** Summary tiles for Income & Expenses (ported as-is, including the web's "cash only" net cash flow). */

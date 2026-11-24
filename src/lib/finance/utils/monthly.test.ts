@@ -1,5 +1,5 @@
 import type { AccountBalance, NetWorthEntry, Transaction } from '../types';
-import { buildMonthlyRows, monthAccounts, transactionTotals } from './monthly';
+import { buildMonthlyRows, copyResultMessage, monthAccounts, previousMonthToCopy, transactionTotals } from './monthly';
 
 // Small builders keep each test focused on the values that matter to it.
 const entry = (date: string, netWorth: number, accounts: AccountBalance[] = []): NetWorthEntry => ({
@@ -143,5 +143,34 @@ describe('transactionTotals', () => {
       netIncome: 2000,
       netCashFlow: 1800, // 3000 - 1200
     });
+  });
+});
+
+describe('previousMonthToCopy', () => {
+  it('offers the previous month when it has account balances', () => {
+    const history = [entry('2026-10-01', 100, [account(1, 'ASSET', 100)])];
+    expect(previousMonthToCopy(history, '2026-11-01')).toEqual({ fromDate: '2026-10-01', label: 'October 2026' });
+  });
+
+  it('reaches back across a year boundary', () => {
+    const history = [entry('2025-12-01', 100, [account(1, 'ASSET', 100)])];
+    expect(previousMonthToCopy(history, '2026-01-01')?.label).toBe('December 2025');
+  });
+
+  it('offers nothing when the previous month is empty or only a historical total', () => {
+    expect(previousMonthToCopy([], '2026-11-01')).toBeNull();
+    const historical: NetWorthEntry[] = [{ date: '2026-10-01', netWorth: 100, source: 'historical', accounts: null }];
+    expect(previousMonthToCopy(historical, '2026-11-01')).toBeNull();
+  });
+});
+
+describe('copyResultMessage', () => {
+  it('counts the balances copied', () => {
+    expect(copyResultMessage({ fromDate: '2026-10-01', copied: 7 })).toBe('Copied 7 balances from October 2026');
+    expect(copyResultMessage({ fromDate: '2026-10-01', copied: 1 })).toBe('Copied 1 balance from October 2026');
+  });
+
+  it('says so when every account was already filled in', () => {
+    expect(copyResultMessage({ fromDate: '2026-10-01', copied: 0 })).toBe('Every account already has a balance this month');
   });
 });

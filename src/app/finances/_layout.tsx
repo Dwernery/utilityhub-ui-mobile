@@ -15,6 +15,8 @@ export default function FinancesLayout() {
       <Stack.Screen name="month/[key]" options={{ ...detailSheet, sheetAllowedDetents: [0.75, 1] }} />
       <Stack.Screen name="transaction/[id]" options={formSheet} />
       <Stack.Screen name="income/[id]" options={formSheet} />
+      <Stack.Screen name="accounts" options={detailSheet} />
+      <Stack.Screen name="account/[id]" options={formSheet} />
     </Stack>
   );
 }

@@ -156,14 +156,14 @@ export default function IncomeHistory() {
               {yearTotals.length > 0 && (
                 <View style={wide ? styles.sideCol : undefined}>
                   <Card style={wide && styles.grow}>
-                    <Text style={[type.headline, { color: colors.label, marginBottom: spacing.md }]}>Income by year</Text>
+                    <Text style={[type.headline, { color: colors.label, marginBottom: spacing.md }]}>Income by Year</Text>
                     <BarChart
                       data={yearTotals}
                       tint={accents.finances}
                       highlight={year != null ? String(year) : null}
                       height={wide ? 'fill' : 220}
                       style={wide && styles.chartMin}
-                      accessibilityLabel={`Income by year: ${describeSeries(yearTotals, fmt)}`}
+                      accessibilityLabel={`Income by Year: ${describeSeries(yearTotals, fmt)}`}
                       formatValue={formatThousands}
                       onSelect={(label) => setSelectedYear(Number(label))}
                     />

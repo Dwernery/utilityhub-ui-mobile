@@ -51,7 +51,7 @@ export function HeroCard({ history, year, alwaysOpen = false }: {
     <Animated.View style={styles.hero} layout={reduceMotion ? undefined : LinearTransition.duration(DETAILS_MS)}>
       <View style={styles.inline}>
         <SymbolView name="dollarsign.circle.fill" size={16} tintColor={financeSurfaces.onHero.secondary} />
-        <Text style={styles.heroLabel}>NET WORTH {year ?? ''}</Text>
+        <Text style={styles.heroLabel}>NET WORTH</Text>
       </View>
       <Text style={[styles.heroValue, tabularNums]} numberOfLines={1} adjustsFontSizeToFit selectable>
         {fmt(currentNetWorth)}
@@ -90,7 +90,7 @@ export function HeroCard({ history, year, alwaysOpen = false }: {
           <HeroStat label="Worst Month" value={s.worstMonth ? `${s.worstMonth.month.slice(0, 3)} ${fmt(s.worstMonth.change)}` : '—'} tone={NEG} />
           <HeroStat label="Avg Monthly Change" value={fmt(s.avgChange)} tone={s.avgChange >= 0 ? POS : NEG} />
           <HeroStat
-            label="Avg Monthly %"
+            label="Avg Monthly Change %"
             value={`${s.avgChangePercent >= 0 ? '+' : '-'}${Math.abs(s.avgChangePercent).toFixed(1)}%`}
             tone={s.avgChangePercent >= 0 ? POS : NEG}
           />
@@ -153,9 +153,7 @@ export function MonthlyList({ rows, onOpen }: { rows: MonthRow[]; onOpen: (row: 
             ) : (
               <>
                 <Text style={[type.subheadline, styles.right, styles.dash, { flex: 1.3 }]}>—</Text>
-                <Text style={[type.subheadline, styles.right, styles.dash, { flex: 1.3 }]}>
-                  {m.isCurrentMonth ? 'Add' : '—'}
-                </Text>
+                <Text style={[type.subheadline, styles.right, styles.dash, { flex: 1.3 }]}>—</Text>
               </>
             )}
             <View style={{ width: 14, alignItems: 'flex-end' }}>

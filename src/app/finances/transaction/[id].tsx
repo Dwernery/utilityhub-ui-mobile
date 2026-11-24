@@ -127,15 +127,16 @@ function EditForm({ t }: { t: Transaction }) {
   const [name, setName] = useState(t.name);
   const [amount, setAmount] = useState(String(t.amount));
   const [paid, setPaid] = useState(!!t.paid);
+  const [cash, setCash] = useState(!!t.cash);
   const busy = update.isPending || remove.isPending;
-  const dirty = name !== t.name || amount !== String(t.amount) || paid !== !!t.paid;
+  const dirty = name !== t.name || amount !== String(t.amount) || paid !== !!t.paid || cash !== !!t.cash;
 
   const save = () => {
     const parsed = parseMoney(amount);
     if (!parsed.ok) return addToast(parsed.error, 'error');
     if (!name.trim()) return addToast('Please enter a transaction name', 'error');
     update.mutate(
-      { id: t.id, name, amount: parsed.value, paid },
+      { id: t.id, name, amount: parsed.value, paid, cash },
       {
         onSuccess: () => {
           addToast('Transaction updated successfully', 'success');
@@ -177,11 +178,14 @@ function EditForm({ t }: { t: Transaction }) {
         deleteLabel={income ? 'Delete income' : 'Delete expense'}
       />
       <FormScroll>
-        <FormSection>
+        <FormSection footer="Cash items count toward Net Cash Flow.">
           <FormTextField label="Name" value={name} onChangeText={setName} placeholder="Transaction name" maxLength={100} editable={!busy} />
           <FormTextField label="Amount" value={amount} onChangeText={setAmount} placeholder="0.00" keyboardType="decimal-pad" editable={!busy} />
           <FormControlRow label="Paid">
             <Switch value={paid} onValueChange={setPaid} trackColor={{ true: tintFor(t.transactionType) as string }} disabled={busy} />
+          </FormControlRow>
+          <FormControlRow label="Cash">
+            <Switch value={cash} onValueChange={setCash} trackColor={{ true: tintFor(t.transactionType) as string }} disabled={busy} />
           </FormControlRow>
         </FormSection>
       </FormScroll>
