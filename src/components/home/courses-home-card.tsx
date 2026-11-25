@@ -4,7 +4,7 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { colors, radius, spacing, type } from '@/constants/theme';
 
 /**
- * Not tappable: the web links to `/courses`, which has no page.
+ * Not tappable: there's no Courses screen yet (the web card isn't a link either).
  * `compact` = one-line strip (wide Home layout) instead of the dashed placeholder box.
  */
 export function CoursesHomeCard({ compact = false }: { compact?: boolean }) {

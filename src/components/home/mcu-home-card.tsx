@@ -10,14 +10,23 @@ import { BREAKDOWN } from '@/lib/mcu/utils/constants';
 import { getInProgress } from '@/lib/mcu/utils/inProgress';
 import { combineStats, computeStats } from '@/lib/mcu/utils/stats';
 
-import { CardDivider, CardError, CardSkeleton, EmptyLine, MetricRow, ProgressItemRow, SectionLabel } from './parts';
+import {
+  CardDivider,
+  CardError,
+  CardSkeleton,
+  EmptyLine,
+  MetricRow,
+  ProgressItemRow,
+  RefreshNotice,
+  SectionLabel,
+} from './parts';
 
 const breakdownMetrics = (stats: WatchStats) =>
   BREAKDOWN.map(({ key, doneKey, label, icon }) => ({ value: `${stats[doneKey]}/${stats[key]}`, label, icon }));
 
 export function McuHomeCard({ style }: { style?: StyleProp<ViewStyle> }) {
   const { watched, phases, expandedCategories } = useMcuTracker();
-  const { data, isPending, isError, error, refetch } = useMcuTrackerData();
+  const { data, isPending, isLoadingError, isRefetchError, isFetching, error, refetch } = useMcuTrackerData();
 
   const mcuStats = useMemo(() => combineStats(phases.map((p) => computeStats(p.items, watched))), [phases, watched]);
   const expandedStats = useMemo(
@@ -31,10 +40,11 @@ export function McuHomeCard({ style }: { style?: StyleProp<ViewStyle> }) {
       <CardHeader title="MCU" icon="film.stack" tint={accents.mcu as string} />
       {isPending ? (
         <CardSkeleton />
-      ) : isError ? (
+      ) : isLoadingError ? (
         <CardError what="MCU data" error={error} onRetry={refetch} />
       ) : (
         <View style={styles.body}>
+          {isRefetchError && <RefreshNotice onRetry={refetch} retrying={isFetching} />}
           <SectionLabel icon="sparkles">MCU Phases</SectionLabel>
           <MetricRow metrics={breakdownMetrics(mcuStats)} />
           <CardDivider />

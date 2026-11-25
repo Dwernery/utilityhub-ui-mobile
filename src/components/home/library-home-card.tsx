@@ -5,16 +5,25 @@ import { accents, colors, spacing, type } from '@/constants/theme';
 import { useBooks } from '@/lib/library/hooks';
 import { libraryHomeStats, readingProgress, type ReadingStats } from '@/lib/library/utils/homeStats';
 
-import { CardDivider, CardError, CardSkeleton, EmptyLine, MetricRow, ProgressItemRow, SectionLabel } from './parts';
+import {
+  CardDivider,
+  CardError,
+  CardSkeleton,
+  EmptyLine,
+  MetricRow,
+  ProgressItemRow,
+  RefreshNotice,
+  SectionLabel,
+} from './parts';
 
 const statsMetrics = (s: ReadingStats) => [
   { value: s.booksRead, label: 'Books', icon: 'book.closed' as const },
   { value: s.pages.toLocaleString(), label: 'Pages', icon: 'book.pages' as const },
-  { value: s.avgRating, label: 'Avg Rating', icon: 'star' as const },
+  { value: s.avgRating ?? '—', label: 'Avg Rating', icon: 'star' as const },
 ];
 
 export function LibraryHomeCard({ style }: { style?: StyleProp<ViewStyle> }) {
-  const { data: books = [], isPending, isError, error, refetch } = useBooks();
+  const { data: books = [], isPending, isLoadingError, isRefetchError, isFetching, error, refetch } = useBooks();
   const { allTime, thisYear, inProgress } = libraryHomeStats(books);
 
   return (
@@ -22,10 +31,11 @@ export function LibraryHomeCard({ style }: { style?: StyleProp<ViewStyle> }) {
       <CardHeader title="Library" icon="books.vertical" tint={accents.library as string} />
       {isPending ? (
         <CardSkeleton />
-      ) : isError ? (
-        <CardError what="library data" error={error} onRetry={refetch} />
+      ) : isLoadingError ? (
+        <CardError what="library" error={error} onRetry={refetch} />
       ) : (
         <View style={styles.body}>
+          {isRefetchError && <RefreshNotice onRetry={refetch} retrying={isFetching} />}
           <SectionLabel icon="calendar">All-Time</SectionLabel>
           <MetricRow metrics={statsMetrics(allTime)} />
           <CardDivider />

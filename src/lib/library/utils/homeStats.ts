@@ -4,8 +4,8 @@ import { daysBetween, parseLocalDate, toIsoDate } from '@/lib/dates';
 export interface ReadingStats {
   booksRead: number;
   pages: number;
-  /** One-decimal string, or 0 when nothing is rated (matches the web). */
-  avgRating: string | 0;
+  /** One-decimal string, or null when nothing is rated (matches the web). */
+  avgRating: string | null;
 }
 
 function summarize(books: Book[]): ReadingStats {
@@ -13,11 +13,11 @@ function summarize(books: Book[]): ReadingStats {
   return {
     booksRead: books.length,
     pages: books.reduce((sum, b) => sum + (b.pages || 0), 0),
-    avgRating: rated.length > 0 ? (rated.reduce((s, b) => s + (b.rating || 0), 0) / rated.length).toFixed(1) : 0,
+    avgRating: rated.length > 0 ? (rated.reduce((s, b) => s + (b.rating || 0), 0) / rated.length).toFixed(1) : null,
   };
 }
 
-/** All-time and current-year reading stats for the Home card (ported from LibraryHomeCard). */
+/** All-time and current-year reading stats for the Home card (mirrors the web's library/utils/homeStats.js). */
 export function libraryHomeStats(books: Book[], year = new Date().getFullYear()) {
   const finished = books.filter((b) => b.status === 'READ' && b.endDate);
   const thisYear = finished.filter((b) => parseLocalDate(b.endDate)?.getFullYear() === year);

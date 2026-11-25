@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View, type ColorValue } from 'react-native
 import { BookCover } from '@/components/library/book-cover';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { colors, radius, spacing, tabularNums, type } from '@/constants/theme';
+import { accents, colors, radius, spacing, tabularNums, type } from '@/constants/theme';
 
 /** Small uppercase-ish section label with an icon: "All-Time", "MCU Phases", "Currently reading"… */
 export function SectionLabel({ icon, children }: { icon: SFSymbol; children: ReactNode }) {
@@ -87,18 +87,67 @@ export function CardSkeleton({ tall = false }: { tall?: boolean }) {
 export function CardError({ what, error, onRetry }: { what: string; error: Error | null; onRetry: () => void }) {
   return (
     <View style={styles.error}>
-      <Text style={[type.subheadline, { color: colors.negative }]}>
-        Failed to load {what}
-        {error?.message ? `: ${error.message}` : '.'}
-      </Text>
-      <Pressable onPress={onRetry} hitSlop={8} accessibilityRole="button">
-        <Text style={[type.subheadline, { color: colors.label, fontWeight: '600' }]}>Retry</Text>
+      <Text style={[type.subheadline, { color: colors.label, fontWeight: '600' }]}>Couldn’t load {what}</Text>
+      {error?.message ? (
+        <Text style={[type.caption1, styles.muted]} selectable>
+          {error.message}
+        </Text>
+      ) : null}
+      <Pressable
+        onPress={onRetry}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={`Try loading ${what} again`}>
+        <Text style={[type.subheadline, { color: accents.home, fontWeight: '600' }]}>Retry</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/**
+ * A failed background refresh: the card keeps the data it has and says so.
+ * Mirrors the web's RefreshNotice in domains/home/components/UtilityCard.jsx.
+ */
+export function RefreshNotice({
+  message = 'Couldn’t refresh. Showing earlier data.',
+  onRetry,
+  retrying = false,
+}: {
+  message?: string;
+  onRetry: () => void;
+  retrying?: boolean;
+}) {
+  return (
+    <View style={styles.notice} accessibilityRole="alert">
+      <SymbolView name="wifi.exclamationmark" size={13} tintColor={colors.warning} weight="semibold" />
+      <Text style={[type.footnote, styles.noticeText]}>{message}</Text>
+      <Pressable
+        onPress={onRetry}
+        disabled={retrying}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Retry"
+        style={({ pressed }) => (pressed || retrying) && styles.dim}>
+        <Text style={[type.footnote, { color: accents.home, fontWeight: '600' }]}>{retrying ? 'Retrying…' : 'Retry'}</Text>
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.sm,
+    borderCurve: 'continuous',
+    backgroundColor: colors.noticeBackground,
+  },
+  noticeText: { flex: 1, color: colors.label },
+  dim: { opacity: 0.5 },
   sectionLabel: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: spacing.sm },
   sectionLabelText: { color: colors.secondaryLabel, fontWeight: '600' },
   cardDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginVertical: spacing.md },

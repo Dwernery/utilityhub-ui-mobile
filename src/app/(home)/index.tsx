@@ -10,6 +10,7 @@ import { LibraryHomeCard } from '@/components/home/library-home-card';
 import { McuHomeCard } from '@/components/home/mcu-home-card';
 import { ScreenScrollView } from '@/components/ui/screen-scroll-view';
 import { colors, spacing, type } from '@/constants/theme';
+import { useToast } from '@/context/toast';
 import { useIsWide } from '@/hooks/use-is-wide';
 import { haptics } from '@/lib/haptics';
 import { clearSession } from '@/lib/session';
@@ -26,12 +27,16 @@ export default function Home() {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const twoColumn = useIsWide();
+  const toast = useToast();
 
   const onRefresh = async () => {
     setRefreshing(true);
     haptics.thud();
     try {
-      await queryClient.refetchQueries({ type: 'active' });
+      // Cards with data keep it and show a "Couldn’t refresh" notice; the toast says the pull failed.
+      await queryClient.refetchQueries({ type: 'active' }, { throwOnError: true });
+    } catch {
+      toast('Couldn’t refresh. Showing earlier data.', 'error');
     } finally {
       setRefreshing(false);
     }
