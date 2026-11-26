@@ -46,15 +46,15 @@ export function LibraryHomeCard({ style }: { style?: StyleProp<ViewStyle> }) {
           {inProgress.length > 0 ? (
             <View style={styles.list}>
               {inProgress.slice(0, 4).map((book) => {
-                const { pct, days } = readingProgress(book);
+                const { pct } = readingProgress(book);
                 return (
                   <ProgressItemRow
                     key={book.id}
                     title={book.title}
                     coverUrl={book.s3Url}
-                    trailing={`${book.currentPage || 0}/${book.pages ?? '?'} pages`}
                     progress={pct / 100}
-                    meta={`${book.authorName}${days !== null ? ` · ${days}d` : ''}`}
+                    // The page count sits under the bar, so the title gets the whole top line.
+                    meta={`${book.currentPage || 0}/${book.pages ?? '?'} pages`}
                     metaTrailing={`${pct}%`}
                     tint={accents.library}
                   />

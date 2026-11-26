@@ -66,9 +66,9 @@ export function CoursesHomeCard({ style }: { style?: StyleProp<ViewStyle> }) {
                     key={course.id}
                     title={course.title}
                     cover={<CourseCover course={course} width={52} />}
-                    trailing={`${course.completedLessons}/${course.totalLessons}`}
                     progress={progressFraction(course.completedLessons, course.totalLessons)}
-                    meta={course.creatorName}
+                    // The lesson count sits under the bar, so the title gets the whole top line.
+                    meta={`${course.completedLessons}/${course.totalLessons} lessons`}
                     metaTrailing={percentLabel(course.completedLessons, course.totalLessons)}
                     tint={accents.courses}
                   />

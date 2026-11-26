@@ -15,6 +15,9 @@ import { useIsWide } from '@/hooks/use-is-wide';
 import { haptics } from '@/lib/haptics';
 import { clearSession } from '@/lib/session';
 
+/** Usable width at which the three small cards share one row (~280 pt each). */
+const THREE_COLUMN_BREAKPOINT = 860;
+
 /** Forgets this phone's session, so the app needs the password again. */
 function confirmSignOut() {
   Alert.alert('Sign Out?', "You'll need your password to use Project SHIELD on this device again.", [
@@ -27,6 +30,8 @@ export default function Home() {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const twoColumn = useIsWide();
+  // Room for Library | MCU | Courses in one row, as on the web (the unfolded Duo in landscape).
+  const threeColumn = useIsWide(THREE_COLUMN_BREAKPOINT);
   const toast = useToast();
 
   const onRefresh = async () => {
@@ -64,8 +69,25 @@ export default function Home() {
           <Text style={[type.subheadline, styles.subtitle]}>Your personal command center</Text>
         </View>
 
-        {twoColumn ? (
-          // Wide: Library | MCU at equal height, then Courses, then Finances (the web's order).
+        {threeColumn ? (
+          // Widest: Library | MCU | Courses at equal height, then Finances (the web's layout).
+          <>
+            <View style={styles.columns}>
+              <View style={styles.column}>
+                <LibraryHomeCard style={styles.fill} />
+              </View>
+              <View style={styles.column}>
+                <McuHomeCard style={styles.fill} />
+              </View>
+              <View style={styles.column}>
+                <CoursesHomeCard style={styles.fill} />
+              </View>
+            </View>
+            <FinancesHomeCard />
+          </>
+        ) : twoColumn ? (
+          // Wide: Library | MCU at equal height, then Courses at the same column width (not stretched
+          // across the row), then Finances.
           <>
             <View style={styles.columns}>
               <View style={styles.column}>
@@ -75,7 +97,12 @@ export default function Home() {
                 <McuHomeCard style={styles.fill} />
               </View>
             </View>
-            <CoursesHomeCard />
+            <View style={styles.columns}>
+              <View style={styles.column}>
+                <CoursesHomeCard />
+              </View>
+              <View style={styles.column} />
+            </View>
             <FinancesHomeCard />
           </>
         ) : (
