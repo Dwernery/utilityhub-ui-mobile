@@ -42,6 +42,10 @@ export default function RootLayout() {
                   <NativeTabs.Trigger.Icon sf={{ default: icons.mcu, selected: icons.mcuSelected }} />
                   <NativeTabs.Trigger.Label>MCU</NativeTabs.Trigger.Label>
                 </NativeTabs.Trigger>
+                <NativeTabs.Trigger name="courses">
+                  <NativeTabs.Trigger.Icon sf={{ default: icons.courses, selected: icons.coursesSelected }} />
+                  <NativeTabs.Trigger.Label>Courses</NativeTabs.Trigger.Label>
+                </NativeTabs.Trigger>
               </NativeTabs>
             </McuTrackerProvider>
           </AuthGate>

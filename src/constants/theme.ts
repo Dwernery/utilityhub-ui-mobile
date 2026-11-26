@@ -35,6 +35,7 @@ export const accents = {
   library: Color.ios.systemBlue,
   finances: Color.ios.systemGreen,
   mcu: Color.ios.systemRed,
+  courses: Color.ios.systemIndigo,
 } as const;
 
 /** Hex versions of the accents for places that can't take PlatformColor (SVG, gradients). */
@@ -42,6 +43,7 @@ export const accentHex = {
   library: '#007AFF',
   finances: '#34C759',
   mcu: '#FF3B30',
+  courses: '#5856D6',
 } as const;
 
 /**

@@ -51,6 +51,14 @@ A route is ✅ when it matches the running web app's **content and behavior** on
 - [x] `/finances/income-expenses` + `/finances/transaction/[id]`: 4 tiles, All/Paid/Unpaid filter, quick paid toggle per row, edit sheet (name/amount/paid switch), "Clear All Paid" in the header menu with confirmation. Totals checked against the API ($8,786 / $7,371 / $175 / $1,415)
 - [x] `/finances/income-history` + `/finances/income/[id]`: year chips with "+ Year" prompt, sources, total, YoY (2026 vs 2025: -$90,000 / -81.8%, checked), add/edit/delete sheet; an "Income by year" bar chart (web too, since 2026-11-23; tap a bar to pick that year): under the sources on phones, beside them on wide layouts at the same height as the income card
 
+## Phase 7: Courses (2026-11-25, with the web and API)
+- [x] Courses tab (5th, indigo): courses by group, a group opens and closes from its header, only groups with a course in progress start open, search shows the matches with their groups open. Group headers show courses finished, lessons and a bar; rows show cover (16:9), title, creator, progress and −/+ (instant, rolled back if the save fails). Pull-to-refresh
+- [x] `/courses/course/[id]`: progress ring, big −/+, tap the count to type it, "Open course" (in-app Safari), edit and delete
+- [x] `/courses/add` + `/courses/course/[id]/edit`: title, creator and group (picker sheet that can add one), lessons, lessons done, link, cover (photo library or camera)
+- [x] `/courses/creators` (rename, delete when no course uses one) and `/courses/groups` (add, rename, reorder, delete: its courses move to Ungrouped), from the ⋯ menu. The web has the same as Creators / Groups windows
+- [x] Home Courses card: Lessons row, Courses row, up to 4 in progress (same three rows as the web). Wide Home: Library | MCU, then Courses, then Finances
+- [x] Stats and form checks in `lib/courses/utils/{stats,courseForm}.ts`, tests mirroring the web's. Needs `platform-api/db/2026-11-25-courses.sql`
+
 ## Phase 6: Polish & ship (personal install, not App Store)
 - [x] App name "Project SHIELD", bundle ID `com.dwernery.projectshield`
 - [x] Icon (logo flattened onto #0b1426 at 1024×1024, no alpha), splash (logo on white / dark navy), logo on Home
@@ -72,7 +80,8 @@ Not covered: typing (the iOS 27 simulator clipboard doesn't work, and the driver
 - Cover upload progress is real: it comes from the `expo-file-system` `File.upload` callback, where the web app used fixed 25/50/75% steps.
 - Charts: Swift Charts has no Y-domain or tooltip API, so the net-worth line chart is custom SVG. Bar charts use Swift Charts.
 - Book covers: 2 of the 3 `s3Url` covers return HTTP 403 from S3 (`promised-land.webp`, `the-road.webp`). The app shows the placeholder for them. This is a bucket/data problem, not an app bug.
-- Home: cards are display-only, since the tab bar handles navigation (your call). Dropped the web's "Live" pills and the `/courses` link, which 404s on the web.
+- Home: cards are display-only, since the tab bar handles navigation (your call). Dropped the web's "Live" pills.
+- Courses: the web reorders groups and renames creators/groups inline in a window; the app uses a sheet with prompts. The web shows groups in two columns on wide screens; the app keeps one readable column. The app adds "tap the count to type it" on the course sheet, which the web does by editing the course.
 - Home Finances card: no graph, whole-dollar amounts. This matches the web card at phone width.
 - `MCUCurrentlyWatching` on the web keyed rows by `item.id`, which is undefined for movies. Native keys rows by `globalId`.
 - Book forms: switching status to Reading/Read fills an empty start/end date with today. The web left them blank and then failed validation on save.

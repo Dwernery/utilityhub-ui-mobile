@@ -13,6 +13,8 @@ export const icons = {
   finances: 'chart.line.uptrend.xyaxis',
   mcu: 'film.stack',
   mcuSelected: 'film.stack.fill',
+  courses: 'graduationcap',
+  coursesSelected: 'graduationcap.fill',
 
   // Domain glyphs
   book: 'book', // BookOpen

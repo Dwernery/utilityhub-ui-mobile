@@ -33,9 +33,12 @@ export function ProgressItemRow({
   meta,
   metaTrailing,
   tint,
+  cover,
 }: {
   title: string;
   coverUrl?: string | null;
+  /** Replaces the book cover (e.g. a course's 16:9 cover). */
+  cover?: ReactNode;
   trailing?: string;
   /** 0–1 */
   progress: number;
@@ -45,7 +48,7 @@ export function ProgressItemRow({
 }) {
   return (
     <View style={styles.itemRow} accessible accessibilityLabel={[title, meta, trailing, metaTrailing].filter(Boolean).join(', ')}>
-      <BookCover book={{ s3Url: coverUrl ?? null, title }} width={36} />
+      {cover ?? <BookCover book={{ s3Url: coverUrl ?? null, title }} width={36} />}
       <View style={styles.itemBody}>
         <View style={styles.itemLine}>
           <Text style={[type.subheadline, styles.itemTitle]} numberOfLines={1}>

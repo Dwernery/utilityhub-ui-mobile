@@ -65,7 +65,7 @@ export default function Home() {
         </View>
 
         {twoColumn ? (
-          // Wide: Library | MCU at equal height, Finances full width, Courses as a slim strip last.
+          // Wide: Library | MCU at equal height, then Courses, then Finances (the web's order).
           <>
             <View style={styles.columns}>
               <View style={styles.column}>
@@ -75,8 +75,8 @@ export default function Home() {
                 <McuHomeCard style={styles.fill} />
               </View>
             </View>
+            <CoursesHomeCard />
             <FinancesHomeCard />
-            <CoursesHomeCard compact />
           </>
         ) : (
           <>
